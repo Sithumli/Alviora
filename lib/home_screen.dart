@@ -1,212 +1,238 @@
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFE0E7FF),
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text("Welcome,", style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 4),
-                  Text("Adam Smith", style: TextStyle(fontSize: 18)),
+      body: Stack(
+        children: [
+          // Gradient background
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFFBE7F5), // soft pink top right
+                  Color(0xFFE6F0FF), // middle tone
+                  Color(0xFFD2EAFF), // blue at bottom
                 ],
+                stops: [0.0, 0.5, 1.0],
               ),
             ),
+          ),
 
-            // Scrollable horizontal top buttons
-            SizedBox(
-              height: 110,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  _TopActionCard(title: 'To-Do List', subtitle: 'Customize Now', icon: Icons.checklist),
-                  _TopActionCard(title: 'See task status', subtitle: 'Monitor Now', icon: Icons.insights),
-                  _TopActionCard(title: 'Play & Schedule Music', subtitle: '', icon: Icons.music_note),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Temperature and Fall detection summary
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Row(
-                children: [
-                  _StatusCard(title: "Temperature", value: "85C", status: "Normal"),
-                  const SizedBox(width: 12),
-                  _StatusCard(title: "Fall Detection", value: "None"),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Cough Detection
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: const Color(0xFFB4B8F5),
-                ),
-                child: const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text("Cough Detections", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                    SizedBox(height: 4),
-                    Text("Normal", style: TextStyle(fontSize: 14)),
-                    SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text("Last cough: 2 mins ago"),
-                        Text("4 coughs today"),
-                      ],
-                    )
+          // Extra blue glow at the bottom
+          Positioned(
+            bottom: -100,
+            left: -100,
+            right: -100,
+            child: Container(
+              height: 300,
+              decoration: const BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment.bottomCenter,
+                  radius: 1.2,
+                  colors: [
+                    Color(0xFFB2DBFF), // dense bluish bottom
+                    Colors.transparent,
                   ],
                 ),
               ),
             ),
+          ),
 
-            const SizedBox(height: 16),
+          // Foreground content
+          SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 60),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text("Welcome,",
+                      style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+                  const Text("Adam Smith",
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w400)),
+                  const SizedBox(height: 8),
+                  const Text("How are you feeling today ?",
+                      style: TextStyle(
+                        color: Colors.blueAccent,
+                        fontSize: 14,
+                      )),
+                  const SizedBox(height: 0.01),
 
-            // Conditional fall detection card
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: _FallStatusCard(isFallDetected: true),
-            ),
+                  // Icon grid
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    children: [
+                      _buildIconTile(Icons.check_box, "To-Do List"),
+                      _buildIconTile(Icons.view_in_ar, "360 View"),
+                      _buildIconTile(Icons.monitor_heart, "Status"),
+                      _buildIconTile(Icons.notifications, "Alerts"),
+                      _buildIconTile(Icons.check_box, "To-Do List"),
+                      _buildIconTile(Icons.check_box, "To-Do List"),
+                    ],
+                  ),
 
-            const SizedBox(height: 16),
+                  const SizedBox(height: 1),
+                  const Center(
+                    child: Text(
+                      "ALVIORA",
+                      style: TextStyle(
+                          fontSize: 25,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
 
-            // Movement status
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  color: const Color(0xFFB4B8F5),
-                ),
-                child: const Text("Movement status\nUnusual", style: TextStyle(fontSize: 16)),
+                  // Calming Music & Robot Section
+                  Row(
+                    children: [
+                      Expanded(child: _buildCard("Calming Music", Icons.music_note, "Open Now")),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: _cardBoxDecoration(),
+                          child: Center(
+                            child: Image.asset(
+                              "assets/robot.png", // Replace with your actual image asset
+                              height: 60,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Emergency card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(10),
+                    decoration: _cardBoxDecoration(),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.phone, color: Colors.blue),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: const [
+                              Text("Emergency",
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold, fontSize: 16)),
+                              SizedBox(height: 4),
+                              Text(
+                                "Let's open up to the thing that matters among the people",
+                                style: TextStyle(fontSize: 13),
+                              ),
+                              SizedBox(height: 4),
+                              Text("Dial Now",
+                                  style: TextStyle(
+                                      color: Colors.blue,
+                                      fontWeight: FontWeight.w500)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // Bottom button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () {},
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      child: const Text(
+                        "My Schedule",
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  )
+                ],
               ),
             ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: ""),
-          BottomNavigationBarItem(icon: Icon(Icons.camera_alt), label: ""),
-        ],
-      ),
-    );
-  }
-}
-
-class _TopActionCard extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  const _TopActionCard({required this.title, required this.subtitle, required this.icon});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 180,
-      margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 24),
-          const SizedBox(height: 8),
-          Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-          if (subtitle.isNotEmpty) Text(subtitle, style: const TextStyle(fontSize: 12))
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final String? status;
-  const _StatusCard({required this.title, required this.value, this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: Colors.white,
-        ),
-        child: Column(
-          children: [
-            Text(title, style: const TextStyle(fontSize: 14)),
-            const SizedBox(height: 6),
-            Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            if (status != null)
-              Text(status!, style: const TextStyle(color: Colors.grey, fontSize: 12))
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _FallStatusCard extends StatelessWidget {
-  final bool isFallDetected;
-  const _FallStatusCard({required this.isFallDetected});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isFallDetected ? Colors.red.shade100 : Colors.blue.shade100,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            isFallDetected ? "Fall Detected" : "Monitoring for falls...",
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 4),
-          isFallDetected
-              ? const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text("Location: Bedroom\nAction Required:"),
-              Text("[ Call / Dismiss ]", style: TextStyle(color: Colors.red)),
-            ],
-          )
-              : const Text("No detections", style: TextStyle(fontSize: 14)),
         ],
       ),
+    );
+  }
+
+  Widget _buildIconTile(IconData icon, String label) {
+    return Column(
+      children: [
+        Container(
+          width: 72,
+          height: 72,
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.blue[100],
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Icon(icon, size: 32, color: Colors.blue),
+        ),
+        const SizedBox(height: 10),
+        Text(label,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+            textAlign: TextAlign.center),
+      ],
+    );
+  }
+
+  Widget _buildCard(String title, IconData icon, String actionText) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: _cardBoxDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: Colors.blue),
+          const SizedBox(height: 5),
+          Text(title,
+              style:
+              const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Text(actionText,
+              style: const TextStyle(
+                  fontSize: 14,
+                  color: Colors.blue,
+                  fontWeight: FontWeight.w500)),
+        ],
+      ),
+    );
+  }
+
+  BoxDecoration _cardBoxDecoration() {
+    return BoxDecoration(
+      color: Colors.white.withOpacity(0.8),
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.grey.withOpacity(0.15),
+          spreadRadius: 2,
+          blurRadius: 10,
+          offset: const Offset(0, 4),
+        ),
+      ],
     );
   }
 }

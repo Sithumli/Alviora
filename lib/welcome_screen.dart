@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:alviora_app/sign_in_screen.dart'; // Only import Sign In now
-
+import 'package:alviora_app/sign_in_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -8,73 +7,82 @@ class WelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE0E7FF), // Light blue background
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: const Icon(Icons.menu, color: Colors.black),
-      ),
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 20),
-                const Text(
-                  'ALVIORA',
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                    letterSpacing: 2,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.white,
+              Colors.white,
+              Color(0xFF90C3FD),
+              Color(0xFF90C3FD),
+            ],
+            stops: [0.0, 0.74, 0.96, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 20),
+                  const Text(
+                    'ALVIORA',
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                      letterSpacing: 2,
+                    ),
                   ),
-                ),
-                const Text(
-                  'by Team Ctrl Z',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.black54,
+                  const Text(
+                    'by Team Ctrl Z',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.black54,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                Image.asset(
-                  'assets/robot.png',
-                  height: 180, // 🔥 Robot is bigger
-                ),
-                const SizedBox(height: 30),
-                const Text(
-                  'A step Closer to a better Earth',
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                  const SizedBox(height: 20),
+                  Image.asset(
+                    'assets/robot.png',
+                    height: 180,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Create an account & take a step\ntoward a safer environment',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.black87,
+                  const SizedBox(height: 30),
+                  const Text(
+                    'A step Closer to a better Earth',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 30),
-                CustomButton(
-                  icon: Icons.email,
-                  text: 'Sign in',
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const SignInScreen()),
-                    );
-                  },
-                ),
-              ],
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Create an account & take a step\ntoward a safer environment',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 30),
+                  CustomButton(
+                    icon: Icons.email,
+                    text: 'Sign in',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SignInScreen()),
+                      );
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ),

@@ -41,13 +41,12 @@ class _SignInScreenState extends State<SignInScreen> {
 
       // ✅ Navigate to HomeScreen after success
       if (mounted) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-          );
-        });
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
       }
+
 
 
     } on FirebaseAuthException catch (e) {

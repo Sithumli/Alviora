@@ -21,8 +21,9 @@ class IntroScreen extends StatelessWidget {
                     Text(
                       'Welcome to the',
                       style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
+                        fontFamily: 'Urbanist',
+                        fontWeight: FontWeight.w800,
+                        fontSize: 30,
                         color: Colors.black87,
                       ),
                     ),
@@ -30,8 +31,8 @@ class IntroScreen extends StatelessWidget {
                     Text(
                       'ALVIORA',
                       style: TextStyle(
-                        fontSize: 38,
-                        fontWeight: FontWeight.bold,
+                        fontFamily: 'TiltNeon',
+                        fontSize: 48,
                         letterSpacing: 1.5,
                         color: Colors.black,
                       ),
@@ -40,7 +41,8 @@ class IntroScreen extends StatelessWidget {
                     Text(
                       'by Team Ctrl Z',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontFamily: 'Urbanist',
+                        fontSize: 11,
                         color: Colors.black54,
                       ),
                     ),
@@ -54,7 +56,8 @@ class IntroScreen extends StatelessWidget {
                   'Your mindful mental health AI companion\nfor everyone, anywhere 🌿',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontFamily: 'Urbanist',
+                    fontSize: 18,
                     color: Colors.black87,
                   ),
                 ),
@@ -81,7 +84,13 @@ class IntroScreen extends StatelessWidget {
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
-                      Text('Get Started'),
+                      Text(
+                        'Get Started',
+                        style: TextStyle(
+                          fontFamily: 'Urbanist',
+                          fontWeight: FontWeight.w800, // ExtraBold
+                        ),
+                      ),
                       SizedBox(width: 8),
                       Icon(Icons.arrow_forward),
                     ],

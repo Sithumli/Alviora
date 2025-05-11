@@ -42,15 +42,29 @@ class IntroScreen extends StatelessWidget {
                         ),
                       ),
                       SizedBox(height: 4),
-                      Text(
-                        'ALVIORA',
-                        style: TextStyle(
-                          fontFamily: 'TiltNeon',
-                          fontSize: 48,
-                          letterSpacing: 1.5,
-                          color: Colors.black,
+                      Text.rich(
+                        TextSpan(
+                          style: TextStyle(
+                            fontFamily: 'TiltNeon',
+                            fontSize: 48,
+                            letterSpacing: 1.5,
+                            color: Colors.black, // Default color for most characters
+                          ),
+                          children: [
+                            TextSpan(text: 'AL'),
+                            TextSpan(
+                              text: 'V',
+                              style: TextStyle(color: Color(0xFF368FF5)),
+                            ),
+                            TextSpan(text: 'IOR'),
+                            TextSpan(
+                              text: 'A',
+                              style: TextStyle(color: Color(0xFF368FF5)),
+                            ),
+                          ],
                         ),
                       ),
+
                       SizedBox(height: 4),
                       Text(
                         'by Team Ctrl Z',
@@ -79,37 +93,41 @@ class IntroScreen extends StatelessWidget {
                   const SizedBox(height: 60),
 
                   // Get Started Button
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF6A6CE4),
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size.fromHeight(48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 32),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: const [
-                        Text(
-                          'Get Started',
-                          style: TextStyle(
-                            fontFamily: 'Urbanist',
-                            fontWeight: FontWeight.w800, // ExtraBold
-                          ),
+                  SizedBox(
+                    width: 181,
+                    height: 56,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF6A6CE4),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
                         ),
-                        SizedBox(width: 8),
-                        Icon(Icons.arrow_forward),
-                      ],
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Text(
+                            'Get Started',
+                            style: TextStyle(
+                              fontFamily: 'Urbanist',
+                              fontWeight: FontWeight.w800, // ExtraBold
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Icon(Icons.arrow_forward),
+                        ],
+                      ),
                     ),
                   ),
+
                 ],
               ),
             ),

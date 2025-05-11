@@ -19,29 +19,9 @@ class HomeScreen extends StatelessWidget {
                 colors: [
                   Color(0xFFFBE7F5), // soft pink top right
                   Color(0xFFE6F0FF), // middle tone
-                  Color(0xFFD2EAFF), // blue at bottom
+                  Color(0xFFA2CDFF), // blue at bottom
                 ],
-                stops: [0.0, 0.5, 1.0],
-              ),
-            ),
-          ),
-
-          // Extra blue glow at the bottom
-          Positioned(
-            bottom: -100,
-            left: -100,
-            right: -100,
-            child: Container(
-              height: 300,
-              decoration: const BoxDecoration(
-                gradient: RadialGradient(
-                  center: Alignment.bottomCenter,
-                  radius: 1.2,
-                  colors: [
-                    Color(0xFFB2DBFF), // dense bluish bottom
-                    Colors.transparent,
-                  ],
-                ),
+                stops: [0.0, 0.5,0.95],
               ),
             ),
           ),
@@ -84,12 +64,27 @@ class HomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 1),
                   const Center(
-                    child: Text(
-                      "ALVIORA",
-                      style: TextStyle(
+                    child: Text.rich(
+                      TextSpan(
+                        style: TextStyle(
                           fontSize: 25,
                           fontWeight: FontWeight.bold,
-                          letterSpacing: 2),
+                          letterSpacing: 2,
+                          color: Colors.black, // Default color
+                        ),
+                        children: [
+                          TextSpan(text: 'AL'),
+                          TextSpan(
+                            text: 'V',
+                            style: TextStyle(color: Color(0xFF368FF5)),
+                          ),
+                          TextSpan(text: 'IOR'),
+                          TextSpan(
+                            text: 'A',
+                            style: TextStyle(color: Color(0xFF368FF5)),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -220,19 +215,10 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
-
   BoxDecoration _cardBoxDecoration() {
     return BoxDecoration(
       color: Colors.white.withOpacity(0.8),
       borderRadius: BorderRadius.circular(20),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.grey.withOpacity(0.15),
-          spreadRadius: 2,
-          blurRadius: 10,
-          offset: const Offset(0, 4),
-        ),
-      ],
     );
   }
 }

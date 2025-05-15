@@ -1,14 +1,76 @@
-gradle-wrapper.jar
-/.gradle
-/captures/
-/gradlew
-/gradlew.bat
-/local.properties
-GeneratedPluginRegistrant.java
-.cxx/
+# Dart & Flutter
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.melos_tool/
+build/
+.pub-cache/
+.dart_server/
+.fvm/
 
-# Remember to never publicly share your keystore.
-# See https://flutter.dev/to/reference-keystore
-key.properties
-**/*.keystore
-**/*.jks
+# Android
+android/.gradle/
+android/captures/
+android/local.properties
+android/key.properties
+android/*.iml
+android/app/google-services.json
+
+# iOS
+ios/Pods/
+ios/Flutter/Generated.xcconfig
+ios/.symlinks/
+ios/Flutter/App.framework
+ios/Flutter/Flutter.framework
+ios/Flutter/ephemeral/
+ios/Runner.xcworkspace/
+ios/GoogleService-Info.plist
+ios/.generated/
+ios/*.iml
+
+# macOS
+macos/Pods/
+macos/.symlinks/
+macos/Flutter/ephemeral/
+macos/Flutter/GeneratedPluginRegistrant.swift
+
+# Linux
+linux/flutter/
+linux/CMakeFiles/
+linux/build/
+linux/ephemeral/
+
+# Windows
+windows/flutter/
+windows/CMakeFiles/
+windows/build/
+windows/ephemeral/
+
+# Web
+web/.dart_tool/
+web/build/
+
+# Firebase
+*.jks
+*.keystore
+
+# IDEs & Editors
+.idea/
+*.iml
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+# System & temp files
+*.log
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+
+# Scratch files (e.g., from Android Studio)
+scratches/

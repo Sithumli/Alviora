@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'ScheduleScreen.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
@@ -48,7 +48,7 @@ class HomeScreen extends StatelessWidget {
 
                   // Icon buttons
                   SizedBox(
-                    height: 240, // Give a height to avoid layout issues
+                    height: 240,
                     child: GridView.count(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -57,17 +57,16 @@ class HomeScreen extends StatelessWidget {
                       mainAxisSpacing: 0,
                       padding: EdgeInsets.zero,
                       children: [
-                        _buildButton(Icons.check_box, "To-Do List", () {}),
-                        _buildButton(Icons.view_in_ar, "360 View", () {}),
-                        _buildButton(Icons.monitor_heart, "Status", () {}),
-                        _buildButton(Icons.notifications, "Alerts", () {}),
-                        _buildButton(Icons.cleaning_services, "Home Clean", () {}),
-                        _buildButton(Icons.visibility, "Detection", () {}),
+                        _buildButton(context, Icons.check_box, "To-Do List", const ScheduleScreen()),
+                        _buildButton(context, Icons.view_in_ar, "360 View", const View360Page()),
+                        _buildButton(context, Icons.monitor_heart, "Status", const StatusPage()),
+                        _buildButton(context, Icons.notifications, "Alerts", const AlertsPage()),
+                        _buildButton(context, Icons.cleaning_services, "Home Clean", const HomeCleanPage()),
+                        _buildButton(context, Icons.visibility, "Detection", const DetectionPage()),
                       ],
                     ),
                   ),
 
-                  // ALViora Text
                   const Padding(
                     padding: EdgeInsets.only(top: 0),
                     child: Center(
@@ -106,7 +105,7 @@ class HomeScreen extends StatelessWidget {
                       children: [
                         Expanded(
                           flex: 2,
-                          child: _buildCard("Mood Booster", Icons.music_note, "Open Now", () {}),
+                          child: _buildCard(context, "Mood Booster", Icons.music_note, "Open Now", const MoodBoosterPage()),
                         ),
                         const SizedBox(width: 11),
                         Expanded(
@@ -118,9 +117,7 @@ class HomeScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Center(
-                              child: Image.asset(
-                                "assets/robot2.png",
-                              ),
+                              child: Image.asset("assets/robot2.gif"),
                             ),
                           ),
                         ),
@@ -136,11 +133,11 @@ class HomeScreen extends StatelessWidget {
                     child: Row(
                       children: [
                         Expanded(
-                          child: _buildCard("Q & A", Icons.question_answer, "Open Now", () {}),
+                          child: _buildCard(context, "Q & A", Icons.question_answer, "Open Now", const QAPage()),
                         ),
                         const SizedBox(width: 11),
                         Expanded(
-                          child: _buildCard("Emergency", Icons.phone, "Dial Now", () {}),
+                          child: _buildCard(context, "Emergency", Icons.phone, "Dial Now", const EmergencyPage()),
                         ),
                       ],
                     ),
@@ -175,9 +172,11 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  static Widget _buildButton(IconData icon, String label, VoidCallback onPressed) {
+  static Widget _buildButton(BuildContext context, IconData icon, String label, Widget page) {
     return GestureDetector(
-      onTap: onPressed,
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+      },
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -200,9 +199,11 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  static Widget _buildCard(String title, IconData icon, String actionText, VoidCallback onPressed) {
+  static Widget _buildCard(BuildContext context, String title, IconData icon, String actionText, Widget page) {
     return GestureDetector(
-      onTap: onPressed,
+      onTap: () {
+        Navigator.push(context, MaterialPageRoute(builder: (_) => page));
+      },
       child: Container(
         height: 150,
         padding: const EdgeInsets.all(20),
@@ -228,4 +229,59 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+// Dummy placeholder pages
+class ToDoPage extends StatelessWidget {
+  const ToDoPage({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('To-Do List')));
+}
+
+class View360Page extends StatelessWidget {
+  const View360Page({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('360 View')));
+}
+
+class StatusPage extends StatelessWidget {
+  const StatusPage({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Status')));
+}
+
+class AlertsPage extends StatelessWidget {
+  const AlertsPage({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Alerts')));
+}
+
+class HomeCleanPage extends StatelessWidget {
+  const HomeCleanPage({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Home Clean')));
+}
+
+class DetectionPage extends StatelessWidget {
+  const DetectionPage({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Detection')));
+}
+
+class MoodBoosterPage extends StatelessWidget {
+  const MoodBoosterPage({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Mood Booster')));
+}
+
+class QAPage extends StatelessWidget {
+  const QAPage({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Q & A')));
+}
+
+class EmergencyPage extends StatelessWidget {
+  const EmergencyPage({super.key});
+  @override
+  Widget build(BuildContext context) => Scaffold(appBar: AppBar(title: const Text('Emergency')));
 }

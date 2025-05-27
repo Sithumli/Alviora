@@ -162,7 +162,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   const SizedBox(height: 24),
 
                   ElevatedButton(
-                    /*onPressed: isLoading
+                    onPressed: isLoading
                         ? null
                         : () {
                       // Bypass the form validation and go directly to HomeScreen
@@ -177,7 +177,8 @@ class _SignInScreenState extends State<SignInScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                    ),*/
+                    ), child: null,
+                    /*
                     onPressed: isLoading ? null : signInUser,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF368FF5),
@@ -188,7 +189,7 @@ class _SignInScreenState extends State<SignInScreen> {
                     ),
                     child: isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text('Continue', style: TextStyle(fontSize: 15, color: Colors.white)),
+                        : const Text('Continue', style: TextStyle(fontSize: 15, color: Colors.white)),*/
                   ),
                 ],
               ),

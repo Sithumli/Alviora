@@ -36,7 +36,6 @@ class _AddScheduleState extends State<AddSchedule> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Let's set the schedule easily"),
-        backgroundColor: const Color(0xFF3F86F4),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

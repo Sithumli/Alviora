@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:alviora_app/mood_booster.dart';
+import 'mood_booster.dart';
+import 'ScheduleScreen.dart';  // Import ScheduleScreen from same folder
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -58,7 +59,14 @@ class HomeScreen extends StatelessWidget {
                       mainAxisSpacing: 0,
                       padding: EdgeInsets.zero,
                       children: [
-                        _buildButton(Icons.check_box, "To-Do List", () {}),
+                        _buildButton(Icons.check_box, "To-Do List", () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const ScheduleScreen(),
+                            ),
+                          );
+                        }),
                         _buildButton(Icons.view_in_ar, "360 View", () {}),
                         _buildButton(Icons.monitor_heart, "Status", () {}),
                         _buildButton(Icons.notifications, "Alerts", () {}),

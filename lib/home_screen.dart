@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:alviora_app/mood_booster.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -48,7 +49,7 @@ class HomeScreen extends StatelessWidget {
 
                   // Icon buttons
                   SizedBox(
-                    height: 240, // Give a height to avoid layout issues
+                    height: 240,
                     child: GridView.count(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
@@ -67,7 +68,6 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
 
-                  // ALViora Text
                   const Padding(
                     padding: EdgeInsets.only(top: 0),
                     child: Center(
@@ -106,7 +106,13 @@ class HomeScreen extends StatelessWidget {
                       children: [
                         Expanded(
                           flex: 2,
-                          child: _buildCard("Mood Booster", Icons.music_note, "Open Now", () {}),
+                          child: _buildCard("Mood Booster", Icons.music_note, "Open Now", () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => const MoodBoosterScreen()),
+                            );
+                          }),
                         ),
                         const SizedBox(width: 11),
                         Expanded(
@@ -118,9 +124,7 @@ class HomeScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Center(
-                              child: Image.asset(
-                                "assets/robot2.png",
-                              ),
+                              child: Image.asset("assets/robot2.png"),
                             ),
                           ),
                         ),

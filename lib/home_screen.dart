@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'mood_booster.dart';
-import 'ScheduleScreen.dart';  // Import ScheduleScreen from same folder
+import 'ScheduleScreen.dart';
+import '360_view.dart'; // ✅ Import added for 360 View
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -67,7 +68,14 @@ class HomeScreen extends StatelessWidget {
                             ),
                           );
                         }),
-                        _buildButton(Icons.view_in_ar, "360 View", () {}),
+                        _buildButton(Icons.view_in_ar, "360 View", () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const LiveViewScreen(), // ✅ Page navigation
+                            ),
+                          );
+                        }),
                         _buildButton(Icons.monitor_heart, "Status", () {}),
                         _buildButton(Icons.notifications, "Alerts", () {}),
                         _buildButton(Icons.cleaning_services, "Home Clean", () {}),

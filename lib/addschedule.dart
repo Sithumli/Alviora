@@ -11,7 +11,7 @@ class AddSchedule extends StatefulWidget {
 class _AddScheduleState extends State<AddSchedule> {
   int selectedDateIndex = 0;
   int? selectedFromTimeIndex = 24; // Default to 12:00
-  int? selectedToTimeIndex = 28;   // Default to 14:00
+  int? selectedToTimeIndex = 28; // Default to 14:00
   final noteController = TextEditingController();
 
   late List<DateTime> weekDates;
@@ -40,69 +40,137 @@ class _AddScheduleState extends State<AddSchedule> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('Select the date', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          const Text('Select the date',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           SizedBox(
             height: 73,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: weekDates.length,
+              itemCount: weekDates.length + 1, // +1 for calendar box
               separatorBuilder: (_, __) => const SizedBox(width: 10),
               itemBuilder: (context, index) {
-                final date = weekDates[index];
-                final isSelected = selectedDateIndex == index;
-                return GestureDetector(
-                  onTap: () => setState(() => selectedDateIndex = index),
-                  child: Container(
-                    width: 53,
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFF3F86F4) : Colors.transparent,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: isSelected ? const Color(0xFF3F86F4) : Colors.grey),
+                if (index < weekDates.length) {
+                  final date = weekDates[index];
+                  final isSelected = selectedDateIndex == index;
+                  return GestureDetector(
+                    onTap: () => setState(() => selectedDateIndex = index),
+                    child: Container(
+                      width: 53,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? const Color(0xFF3F86F4)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                            color: isSelected
+                                ? const Color(0xFF3F86F4)
+                                : Colors.grey),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text("${date.day}",
+                              style: TextStyle(
+                                  color:
+                                  isSelected ? Colors.white : Colors.black,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18)),
+                          Text(_weekdayLabel(date.weekday),
+                              style: TextStyle(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : Colors.black54,
+                                  fontSize: 14)),
+                        ],
+                      ),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text("${date.day}",
-                            style: TextStyle(color: isSelected ? Colors.white : Colors.black, fontWeight: FontWeight.bold, fontSize: 18)),
-                        Text(_weekdayLabel(date.weekday),
-                            style: TextStyle(color: isSelected ? Colors.white : Colors.black54, fontSize: 14)),
-                      ],
+                  );
+                } else {
+                  // Calendar picker box
+                  return GestureDetector(
+                    onTap: () async {
+                      DateTime? picked = await showDatePicker(
+                        context: context,
+                        initialDate: weekDates[selectedDateIndex],
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          bool exists =
+                          weekDates.any((d) => isSameDate(d, picked));
+                          if (!exists) {
+                            weekDates.add(picked);
+                            weekDates.sort((a, b) => a.compareTo(b));
+                          }
+                          selectedDateIndex =
+                              weekDates.indexWhere((d) => isSameDate(d, picked));
+                        });
+                      }
+                    },
+                    child: Container(
+                      width: 53,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.grey),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Icon(Icons.calendar_today,
+                              size: 28, color: Colors.black54),
+                          SizedBox(height: 4),
+                          Text('More',
+                              style:
+                              TextStyle(color: Colors.black54, fontSize: 14)),
+                        ],
+                      ),
                     ),
-                  ),
-                );
+                  );
+                }
               },
             ),
           ),
 
           const Divider(thickness: 1, height: 40),
-          const Text('Select time', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text('Select time',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: _buildTimeDropdown("From", selectedFromTimeIndex, (val) {
-                setState(() {
-                  selectedFromTimeIndex = val;
-                  if (selectedToTimeIndex != null && val! >= selectedToTimeIndex!) {
-                    selectedToTimeIndex = val + 1 < timeSlots.length ? val + 1 : val;
-                  }
-                });
-              })),
+              Expanded(
+                child: _buildTimeDropdown("From", selectedFromTimeIndex, (val) {
+                  setState(() {
+                    selectedFromTimeIndex = val;
+                    if (selectedToTimeIndex != null && val! >= selectedToTimeIndex!) {
+                      selectedToTimeIndex =
+                      val + 1 < timeSlots.length ? val + 1 : val;
+                    }
+                  });
+                }),
+              ),
               const SizedBox(width: 16),
-              Expanded(child: _buildTimeDropdown("To", selectedToTimeIndex, (val) {
-                setState(() {
-                  selectedToTimeIndex = val;
-                  if (selectedFromTimeIndex != null && val! <= selectedFromTimeIndex!) {
-                    selectedFromTimeIndex = val - 1 >= 0 ? val - 1 : val;
-                  }
-                });
-              })),
+              Expanded(
+                child: _buildTimeDropdown("To", selectedToTimeIndex, (val) {
+                  setState(() {
+                    selectedToTimeIndex = val;
+                    if (selectedFromTimeIndex != null && val! <= selectedFromTimeIndex!) {
+                      selectedFromTimeIndex =
+                      val - 1 >= 0 ? val - 1 : val;
+                    }
+                  });
+                }),
+              ),
             ],
           ),
 
           const Divider(thickness: 1, height: 40),
-          const Text('Note', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text('Note',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 16),
           TextField(
             controller: noteController,
@@ -151,7 +219,8 @@ class _AddScheduleState extends State<AddSchedule> {
     );
   }
 
-  Widget _buildTimeDropdown(String label, int? selectedIndex, ValueChanged<int?> onChanged) {
+  Widget _buildTimeDropdown(
+      String label, int? selectedIndex, ValueChanged<int?> onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -174,5 +243,9 @@ class _AddScheduleState extends State<AddSchedule> {
   String _weekdayLabel(int weekday) {
     const labels = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
     return labels[weekday - 1];
+  }
+
+  bool isSameDate(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
   }
 }

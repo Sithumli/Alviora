@@ -1,7 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:webview_flutter/webview_flutter.dart';
+import 'package:http/http.dart' as http;
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: '360 Live View Demo',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: const LiveViewScreen(),
+    );
+  }
+}
 
 class LiveViewScreen extends StatelessWidget {
   const LiveViewScreen({super.key});
+
+  final String streamUrl = 'http://192.168.1.5:8080/stream';
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +53,7 @@ class LiveViewScreen extends StatelessWidget {
             const Text("Viewing: Bed Room", style: TextStyle(color: Colors.grey)),
             const SizedBox(height: 16),
 
-            // 360 View Area (Placeholder for video or WebView)
+            // Live Stream Container
             Container(
               height: 200,
               width: double.infinity,
@@ -40,9 +61,7 @@ class LiveViewScreen extends StatelessWidget {
                 border: Border.all(color: Colors.blueAccent, width: 2),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Center(
-                child: Icon(Icons.videocam_rounded, size: 60, color: Colors.grey),
-              ),
+              child: LiveStreamView(streamUrl: streamUrl),
             ),
 
             const SizedBox(height: 20),
@@ -88,6 +107,77 @@ class LiveViewScreen extends StatelessWidget {
         const SizedBox(height: 8),
         Text(label, style: const TextStyle(fontSize: 12))
       ],
+    );
+  }
+}
+
+class LiveStreamView extends StatefulWidget {
+  final String streamUrl;
+
+  const LiveStreamView({super.key, required this.streamUrl});
+
+  @override
+  State<LiveStreamView> createState() => _LiveStreamViewState();
+}
+
+class _LiveStreamViewState extends State<LiveStreamView> {
+  bool _streamAvailable = false;
+  bool _loading = true;
+  late final WebViewController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..loadRequest(Uri.parse(widget.streamUrl));
+    _checkStreamAvailability();
+  }
+
+  Future<void> _checkStreamAvailability() async {
+    setState(() => _loading = true);
+    try {
+      final response = await http.get(Uri.parse(widget.streamUrl)).timeout(const Duration(seconds: 3));
+      setState(() {
+        _streamAvailable = response.statusCode == 200;
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _streamAvailable = false;
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (!_streamAvailable) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 60, color: Colors.red),
+            const SizedBox(height: 16),
+            const Text('Stream not available', style: TextStyle(fontSize: 18)),
+            const SizedBox(height: 8),
+            ElevatedButton.icon(
+              onPressed: _checkStreamAvailability,
+              icon: const Icon(Icons.refresh),
+              label: const Text("Retry"),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: WebViewWidget(controller: _controller),
     );
   }
 }

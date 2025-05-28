@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'addschedule.dart';
+import 'home_screen.dart';
 
 class ScheduleScreen extends StatefulWidget {
   const ScheduleScreen({super.key});
@@ -10,79 +12,56 @@ class ScheduleScreen extends StatefulWidget {
 }
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
-  List<Map<String, dynamic>> _schedules = [
-    {
-      'date': '2025-05-27',
-      'time': '08:00',
-      'hasEvent': true,
-      'description': 'Morning Meeting',
-    },
-    {
-      'date': '2025-05-27',
-      'time': '12:00',
-      'hasEvent': true,
-      'description': 'Lunch with Team',
-    },
-    {
-      'date': '2025-05-28',
-      'time': '10:00',
-      'hasEvent': true,
-      'description': 'Project Review',
-    },
-  ];
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  DateTime selectedDate = DateTime.now();
+  List<Map<String, dynamic>> _schedules = [];
 
   @override
-  Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final todayStr = _formatDate(now);
-
-    final todaySchedules = _schedules
-        .where((sched) => sched['date'] == todayStr)
-        .toList();
-
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F9FF),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildTopIcons(),
-              const SizedBox(height: 20),
-              _buildProgressCard(),
-              const SizedBox(height: 20),
-              _buildDateSelector(),
-              const SizedBox(height: 10),
-              const Text("Schedule Today",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 10),
-              if (todaySchedules.isEmpty)
-                const Text('No schedules for today'),
-              for (var sched in todaySchedules)
-                _buildTimeBlock(sched['time'],
-                    hasEvent: sched['hasEvent'],
-                    description: sched['description']),
-              const SizedBox(height: 20),
-              _buildReminderCard(),
-              const SizedBox(height: 10),
-              _buildAddScheduleButton(context),
-            ],
-          ),
-        ),
-      ),
-    );
+  void initState() {
+    super.initState();
+    _loadSchedulesForDate(selectedDate);
   }
 
-  String _formatDate(DateTime dt) =>
-      DateFormat('yyyy-MM-dd').format(dt);
+  Future<void> _loadSchedulesForDate(DateTime date) async {
+    final dateStr = _formatDate(date);
 
-  Widget _buildTopIcons() {
+    final snapshot = await _firestore
+        .collection('schedules')
+        .where('date', isEqualTo: dateStr)
+        .orderBy('time')
+        .get();
+
+    setState(() {
+      _schedules = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'date': data['date'],
+          'time': data['time'],
+          'hasEvent': true,
+          'description': data['description'],
+          'docId': doc.id,
+        };
+      }).toList();
+    });
+  }
+
+  String _formatDate(DateTime dt) => DateFormat('yyyy-MM-dd').format(dt);
+
+  Widget _buildTopIcons(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: const [
-        Icon(Icons.home_outlined),
-        Icon(Icons.menu),
+      children: [
+        GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+            );
+          },
+          child: const Icon(Icons.home),
+        ),
+        const Icon(Icons.menu),
       ],
     );
   }
@@ -134,35 +113,43 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           separatorBuilder: (_, __) => const SizedBox(width: 10),
           itemBuilder: (context, index) {
             final date = weekDates[index];
-            final isToday = date.day == now.day &&
-                date.month == now.month &&
-                date.year == now.year;
+            final isSelected = date.day == selectedDate.day &&
+                date.month == selectedDate.month &&
+                date.year == selectedDate.year;
 
-            return Container(
-              width: 53,
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: isToday ? const Color(0xFF3F86F4) : Colors.transparent,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "${date.day}",
-                    style: TextStyle(
-                      color: isToday ? Colors.white : Colors.black,
-                      fontWeight: FontWeight.bold,
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  selectedDate = date;
+                });
+                _loadSchedulesForDate(selectedDate);
+              },
+              child: Container(
+                width: 53,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isSelected ? const Color(0xFF3F86F4) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "${date.day}",
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : Colors.black,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  Text(
-                    _weekdayLabel(date.weekday),
-                    style: TextStyle(
-                      color: isToday ? Colors.white : Colors.black54,
-                      fontSize: 14,
+                    Text(
+                      _weekdayLabel(date.weekday),
+                      style: TextStyle(
+                        color: isSelected ? Colors.white : Colors.black54,
+                        fontSize: 14,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },
@@ -265,20 +252,56 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           );
 
           if (result != null && result is Map<String, dynamic>) {
-            setState(() {
-              _schedules.add({
-                'date': DateFormat('yyyy-MM-dd').format(
-                  DateFormat('d EEE').parse(result['date']),
-                ),
-                'time': result['from'],
-                'hasEvent': true,
-                'description': result['note'],
-              });
+            await _firestore.collection('schedules').add({
+              'date': result['date'], // yyyy-MM-dd string
+              'time': result['from'], // time string
+              'description': result['description'] ?? result['note'] ?? '',
+              'createdAt': FieldValue.serverTimestamp(),
             });
+
+            _loadSchedulesForDate(selectedDate);
           }
         },
         child: const Text("Add Schedule",
             style: TextStyle(fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F9FF),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildTopIcons(context),
+              const SizedBox(height: 20),
+              _buildProgressCard(),
+              const SizedBox(height: 20),
+              _buildDateSelector(),
+              const SizedBox(height: 10),
+              const Text("Schedule Today",
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 10),
+              if (_schedules.isEmpty)
+                const Text('No schedules for today'),
+              for (var sched in _schedules)
+                _buildTimeBlock(
+                  sched['time'],
+                  hasEvent: sched['hasEvent'],
+                  description: sched['description'],
+                ),
+              const SizedBox(height: 20),
+              _buildReminderCard(),
+              const SizedBox(height: 10),
+              _buildAddScheduleButton(context),
+            ],
+          ),
+        ),
       ),
     );
   }

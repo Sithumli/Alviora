@@ -75,6 +75,7 @@ flutter:
     - assets/robot.png
     - assets/robot2.png
     - assets/robot2.gif
+    - assets/fall.png
 
 
   fonts:

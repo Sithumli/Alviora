@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'mood_booster.dart';
 import 'ScheduleScreen.dart';
-import '360_view.dart'; // ✅ Import added for 360 View
+import '360_view.dart';
 import 'alerts_screen.dart';
-
+import 'detection.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -74,7 +74,7 @@ class HomeScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const LiveViewScreen(), // ✅ Page navigation
+                              builder: (context) => const LiveViewScreen(),
                             ),
                           );
                         }),
@@ -83,13 +83,19 @@ class HomeScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>  AlertsScreen(),
+                              builder: (context) => AlertsScreen(),
                             ),
                           );
                         }),
-
                         _buildButton(Icons.cleaning_services, "Home Clean", () {}),
-                        _buildButton(Icons.visibility, "Detection", () {}),
+                        _buildButton(Icons.visibility, "Detection", () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => DetectionAlertsPage(),
+                            ),
+                          );
+                        }),
                       ],
                     ),
                   ),
@@ -144,13 +150,16 @@ class HomeScreen extends StatelessWidget {
                         Expanded(
                           flex: 1,
                           child: Container(
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.8),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Center(
-                              child: Image.asset("assets/robot2.png"),
+                              child: SizedBox(
+                                height: 100,
+                                child: Image.asset("assets/robot2.gif"),
+                              ),
                             ),
                           ),
                         ),
@@ -240,22 +249,32 @@ class HomeScreen extends StatelessWidget {
           color: Colors.white.withOpacity(0.8),
           borderRadius: BorderRadius.circular(20),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: Colors.blue),
-            const SizedBox(height: 5),
-            Text(title,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 6),
-            Text(actionText,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 10),
+              Icon(icon, color: Colors.blue, size: 42), // 🔵 Bigger Icon in the middle
+              const SizedBox(height: 10),
+              Text(
+                actionText,
                 style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.blue,
-                    fontWeight: FontWeight.w500)),
-          ],
+                  fontSize: 14,
+                  color: Colors.blue,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
+
 }

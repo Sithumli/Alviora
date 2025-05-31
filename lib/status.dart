@@ -1,0 +1,259 @@
+import 'package:flutter/material.dart';
+import 'home_screen.dart'; // Adjust the path as necessary
+
+class StatusScreen extends StatelessWidget {
+  const StatusScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFEAF0FA),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.home, color: Colors.black),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+            );
+          },
+        ),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 16.0),
+            child: Icon(Icons.menu, color: Colors.black),
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // TOP ROW
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildTopCard(Icons.local_drink, "Daily Water Intake", "4 Cups", true),
+                  _buildTopCard(Icons.mood, "Mood", "Good", false),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  _buildTopCard(Icons.thermostat, "Temperature", "37.1℃", false),
+                  _buildSleepCard(),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              _buildExerciseCard(),
+
+              const SizedBox(height: 20),
+
+              // Recent Health Alerts
+              _buildSectionTitle("Recent Health Alerts"),
+              const SizedBox(height: 10),
+              _buildAlertTile("Slight coughing detected", "Yesterday, 10:30 PM"),
+              _buildAlertTile("Lower activity than usual", "2 days ago"),
+
+              const SizedBox(height: 20),
+
+              // Medication Tracker
+              _buildSectionTitle("Medication Tracker"),
+              const SizedBox(height: 10),
+              _buildMedicationTile("Blood Pressure Medicine", "8:00 AM - Taken", true),
+              _buildMedicationTile("Vitamin Supplement", "1:00 PM - Upcoming", false),
+              _buildMedicationTile("Cholesterol Medicine", "9:00 PM - Upcoming", false),
+
+              const SizedBox(height: 20),
+
+              Container(
+                width: double.infinity,
+                height: 45,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF6785F2), Color(0xFFADC8FF)],
+                  ),
+                ),
+                child: ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.transparent,
+                    shadowColor: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    "More Health Alerts",
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopCard(IconData icon, String title, String value, bool hasAdd) {
+    return Expanded(
+      child: Container(
+        height: 100,
+        margin: const EdgeInsets.symmetric(horizontal: 6),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: Colors.blue),
+                const Spacer(),
+                if (hasAdd)
+                  const Icon(Icons.add, size: 18, color: Colors.blue),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 12),
+            ),
+            Text(
+              value,
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSleepCard() {
+    return Expanded(
+      child: Container(
+        height: 100,
+        margin: const EdgeInsets.symmetric(horizontal: 6),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Icon(Icons.nightlight_round, color: Colors.blue),
+            SizedBox(height: 8),
+            Text("Sleep Time", style: TextStyle(fontSize: 12)),
+            Text("7H 25Min", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExerciseCard() {
+    return Container(
+      height: 100,
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.fitness_center, color: Colors.blue),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Text("Exercise", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+              SizedBox(height: 4),
+              Text("30 minutes\n350 Cals", style: TextStyle(fontSize: 12)),
+            ],
+          ),
+          const Spacer(),
+          const Icon(Icons.add, color: Colors.blue),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Text(
+        title,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Widget _buildAlertTile(String message, String time) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline, color: Colors.blue),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(message, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 4),
+                Text(time, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              ],
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMedicationTile(String name, String time, bool taken) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: taken ? const Color(0xFFDAE9FF) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.medical_services, color: Colors.blue),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 4),
+              Text(time, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+}

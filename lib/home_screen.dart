@@ -223,7 +223,12 @@ class HomeScreen extends StatelessWidget {
                         ),
                         const SizedBox(width: 11),
                         Expanded(
-                          child: _buildCard("Emergency", Icons.phone, "Dial Now", () {}),
+                          child: _buildCard("Emergency", Icons.phone, "Dial Now", () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const EmergencyPage()),
+                            );
+                          }),
                         ),
                       ],
                     ),

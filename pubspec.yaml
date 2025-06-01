@@ -49,7 +49,6 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  google_fonts: ^6.1.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -80,6 +79,12 @@ flutter:
     - assets/cough.png
     - assets/the_hills.jpeg
     - assets/song.jpeg
+    - assets/joy1.png
+    - assets/joy2.png
+    - assets/joy3.png
+    - assets/joy4.png
+    - assets/joy5.png
+    - assets/joy6.png
     - assets/avatar.png
 
 

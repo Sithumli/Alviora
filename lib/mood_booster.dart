@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart'; // adjust the path if needed
 import 'mood_music.dart' as music; // import your playlist screen
+import 'joy_gallery.dart' as photo;
 
 class MoodBoosterScreen extends StatelessWidget {
   const MoodBoosterScreen({Key? key}) : super(key: key);
@@ -110,12 +111,21 @@ class MoodBoosterScreen extends StatelessWidget {
                         );
                       },
                     ),
-                    const _ActivityTile(
+                    _ActivityTile(
                       icon: Icons.photo,
                       title: 'Joy Gallery',
                       description: 'Your collection of happy moments',
                       time: '2 mins',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const photo.JoyGalleryPage(),
+                          ),
+                        );
+                      },
                     ),
+
                     const _ActivityTile(
                       icon: Icons.chat,
                       title: 'Positive Chat',

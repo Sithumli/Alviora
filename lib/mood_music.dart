@@ -41,7 +41,7 @@ class CalmingPlaylistPage extends StatelessWidget {
                         MaterialPageRoute(builder: (context) => const home.HomeScreen()),
                       );
                     },
-                    child: const Icon(Icons.home_outlined),
+                    child: const Icon(Icons.home_rounded),
                   ),
                   const Text(
                     'Calming Playlist',

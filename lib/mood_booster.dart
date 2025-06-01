@@ -25,7 +25,7 @@ class MoodBoosterScreen extends StatelessWidget {
                         MaterialPageRoute(builder: (context) => const HomeScreen()),
                       );
                     },
-                    child: const Icon(Icons.home, size: 28),
+                    child: const Icon(Icons.home_rounded, size: 28),
                   ),
                 ],
               ),

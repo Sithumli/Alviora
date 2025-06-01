@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
 import 'mood_booster.dart';
 import 'ScheduleScreen.dart';
 import '360_view.dart';
@@ -6,6 +8,7 @@ import 'alerts_screen.dart';
 import 'detection.dart';
 import 'home_clean.dart';
 import 'status.dart';
+import 'settings.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -13,6 +16,7 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           // Gradient background
@@ -31,33 +35,65 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
 
-          // Foreground content
-          SingleChildScrollView(
+          // Foreground content without scrolling
+          SafeArea(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 60),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Welcome,",
-                      style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-                  const Text("Adam Smith",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.w400)),
-                  const SizedBox(height: 8),
-                  const Text("How are you feeling today ?",
-                      style: TextStyle(
-                        color: Colors.blueAccent,
-                        fontSize: 14,
-                        height: 1.0,
-                      )),
+                  // Header row
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            "Welcome,",
+                            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            "Adam Smith",
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w400),
+                          ),
+                        ],
+                      ),
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.menu, color: Colors.black),
+                        onSelected: (value) {
+                          if (value == 'settings') {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                            );
+                          }
+                        },
+                        itemBuilder: (BuildContext context) => [
+                          const PopupMenuItem<String>(
+                            value: 'settings',
+                            child: Text('Settings'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
 
+                  const SizedBox(height: 8),
+                  const Text(
+                    "How are you feeling today ?",
+                    style: TextStyle(
+                      color: Colors.blueAccent,
+                      fontSize: 14,
+                      height: 1.0,
+                    ),
+                  ),
                   const SizedBox(height: 20),
 
-                  // Icon buttons
+                  // Grid buttons wrapped in fixed height container
                   SizedBox(
                     height: 240,
                     child: GridView.count(
-                      shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       crossAxisCount: 3,
                       crossAxisSpacing: 0,
@@ -67,87 +103,75 @@ class HomeScreen extends StatelessWidget {
                         _buildButton(Icons.check_box, "To-Do List", () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => const ScheduleScreen(),
-                            ),
+                            MaterialPageRoute(builder: (context) => const ScheduleScreen()),
                           );
                         }),
                         _buildButton(Icons.view_in_ar, "360 View", () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => const LiveViewScreen(),
-                            ),
+                            MaterialPageRoute(builder: (context) => const LiveViewScreen()),
                           );
                         }),
                         _buildButton(Icons.monitor_heart, "Status", () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => StatusScreen(),
-                            ),
+                            MaterialPageRoute(builder: (context) => StatusScreen()),
                           );
                         }),
                         _buildButton(Icons.notifications, "Alerts", () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => AlertsScreen(),
-                            ),
+                            MaterialPageRoute(builder: (context) => AlertsScreen()),
                           );
                         }),
                         _buildButton(Icons.cleaning_services, "Home Clean", () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => HomeMaintenanceStatus(),
-                            ),
+                            MaterialPageRoute(builder: (context) => HomeMaintenanceStatus()),
                           );
                         }),
                         _buildButton(Icons.visibility, "Detection", () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
-                              builder: (context) => DetectionAlertsPage(),
-                            ),
+                            MaterialPageRoute(builder: (context) => DetectionAlertsPage()),
                           );
                         }),
                       ],
                     ),
                   ),
 
-                  const Padding(
-                    padding: EdgeInsets.only(top: 0),
-                    child: Center(
-                      child: Text.rich(
-                        TextSpan(
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontFamily: 'Urbanist',
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 2,
-                            color: Colors.black,
-                          ),
-                          children: [
-                            TextSpan(text: 'AL'),
-                            TextSpan(
-                              text: 'V',
-                              style: TextStyle(color: Color(0xFF368FF5)),
-                            ),
-                            TextSpan(text: 'IOR'),
-                            TextSpan(
-                              text: 'A',
-                              style: TextStyle(color: Color(0xFF368FF5)),
-                            ),
-                          ],
+                  const SizedBox(height: 10),
+
+                  // ALVIORA Text
+                  const Center(
+                    child: Text.rich(
+                      TextSpan(
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontFamily: 'Urbanist',
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 2,
+                          color: Colors.black,
                         ),
+                        children: [
+                          TextSpan(text: 'AL'),
+                          TextSpan(
+                            text: 'V',
+                            style: TextStyle(color: Color(0xFF368FF5)),
+                          ),
+                          TextSpan(text: 'IOR'),
+                          TextSpan(
+                            text: 'A',
+                            style: TextStyle(color: Color(0xFF368FF5)),
+                          ),
+                        ],
                       ),
                     ),
                   ),
 
                   const SizedBox(height: 20),
 
-                  // First row with Mood Booster and Robot
+                  // Mood Booster + Robot Row
                   SizedBox(
                     height: 150,
                     child: Row(
@@ -157,8 +181,7 @@ class HomeScreen extends StatelessWidget {
                           child: _buildCard("Mood Booster", Icons.music_note, "Open Now", () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
-                                  builder: (context) => const MoodBoosterScreen()),
+                              MaterialPageRoute(builder: (context) => const MoodBoosterScreen()),
                             );
                           }),
                         ),
@@ -185,7 +208,7 @@ class HomeScreen extends StatelessWidget {
 
                   const SizedBox(height: 11),
 
-                  // Second row with Q&A and Emergency
+                  // Q & A + Emergency Row
                   SizedBox(
                     height: 150,
                     child: Row(
@@ -201,23 +224,31 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
 
-                  const SizedBox(height: 30),
+                  const Spacer(),
 
-                  // Bottom button
+                  // My Schedule button
                   SizedBox(
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const ScheduleScreen()),
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blueAccent,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
                       ),
-                      child: const Text(
+                      child: Text(
                         "My Schedule",
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
@@ -247,9 +278,14 @@ class HomeScreen extends StatelessWidget {
             child: Icon(icon, size: 32, color: Colors.white),
           ),
           const SizedBox(height: 5),
-          Text(label,
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-              textAlign: TextAlign.center),
+          Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
@@ -271,15 +307,18 @@ class HomeScreen extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 10),
-              Icon(icon, color: Colors.blue, size: 42), // 🔵 Bigger Icon in the middle
+              Icon(icon, color: Colors.blue, size: 42),
               const SizedBox(height: 10),
               Text(
                 actionText,
-                style: const TextStyle(
+                style: GoogleFonts.inter(
                   fontSize: 14,
                   color: Colors.blue,
                   fontWeight: FontWeight.w500,
@@ -292,5 +331,4 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
-
 }

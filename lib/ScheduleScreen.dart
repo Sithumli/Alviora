@@ -59,7 +59,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               MaterialPageRoute(builder: (context) => const HomeScreen()),
             );
           },
-          child: const Icon(Icons.home),
+          child: const Icon(Icons.home_rounded),
         ),
         const Icon(Icons.menu),
       ],

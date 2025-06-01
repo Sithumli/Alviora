@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'home_screen.dart';
+import 'settings.dart';
 
 void main() {
   runApp(const MaterialApp(home: DetectionAlertsPage()));
@@ -22,11 +24,32 @@ class _DetectionAlertsPageState extends State<DetectionAlertsPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: const Icon(Icons.home_outlined, color: Colors.black),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 16.0),
-            child: Icon(Icons.menu, color: Colors.black),
+        leading: IconButton(
+          icon: const Icon(Icons.home_rounded, color: Colors.black),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+            );
+          },
+        ),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.menu, color: Colors.black),
+            onSelected: (value) {
+              if (value == 'settings') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                );
+              }
+            },
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem<String>(
+                value: 'settings',
+                child: Text('Settings'),
+              ),
+            ],
           ),
         ],
       ),
@@ -73,6 +96,7 @@ class _DetectionAlertsPageState extends State<DetectionAlertsPage> {
             const SizedBox(height: 16),
             if (selectedIndex == 0) ...[
               DetectionCard(
+                title: "Fall Detected",
                 time: "10 Min Ago",
                 urgency: true,
                 action: "Pending",
@@ -81,6 +105,7 @@ class _DetectionAlertsPageState extends State<DetectionAlertsPage> {
               ),
               const SizedBox(height: 12),
               DetectionCard(
+                title: "Fall Detected",
                 time: "12 Days Ago",
                 urgency: false,
                 action: "[ Call / View 360 ]",
@@ -89,6 +114,7 @@ class _DetectionAlertsPageState extends State<DetectionAlertsPage> {
               ),
               const SizedBox(height: 12),
               DetectionCard(
+                title: "Fall Detected",
                 time: "Last Month",
                 urgency: false,
                 action: "[ Call / View 360 ]",
@@ -96,9 +122,59 @@ class _DetectionAlertsPageState extends State<DetectionAlertsPage> {
                 isRecent: false,
               ),
             ] else if (selectedIndex == 1) ...[
-              const Text("Cough detections page here..."),
+              DetectionCard(
+                title: "Cough Detected",
+                time: "5 Days Ago",
+                urgency: false,
+                action: "Pending",
+                imageAsset: 'assets/cough.png',
+                isRecent: false,
+              ),
+              const SizedBox(height: 12),
+              DetectionCard(
+                title: "Cough Detected",
+                time: "5 Days Ago",
+                urgency: false,
+                action: "[ Call / View 360 ]",
+                imageAsset: 'assets/cough.png',
+                isRecent: false,
+              ),
+              const SizedBox(height: 12),
+              DetectionCard(
+                title: "Cough Detected",
+                time: "6 Days Ago",
+                urgency: false,
+                action: "[ Call / View 360 ]",
+                imageAsset: 'assets/cough.png',
+                isRecent: false,
+              ),
             ] else if (selectedIndex == 2) ...[
-              const Text("Other detections page here..."),
+              DetectionCard(
+                title: "Unusual Behavior",
+                time: "5 Days Ago",
+                urgency: false,
+                action: "Pending",
+                imageAsset: 'assets/cough.png',
+                isRecent: false,
+              ),
+              const SizedBox(height: 12),
+              DetectionCard(
+                title: "Unusual Behavior",
+                time: "5 Days Ago",
+                urgency: false,
+                action: "[ Call / View 360 ]",
+                imageAsset: 'assets/cough.png',
+                isRecent: false,
+              ),
+              const SizedBox(height: 12),
+              DetectionCard(
+                title: "Unusual Behavior",
+                time: "6 Days Ago",
+                urgency: false,
+                action: "[ Call / View 360 ]",
+                imageAsset: 'assets/cough.png',
+                isRecent: false,
+              ),
             ]
           ],
         ),
@@ -112,7 +188,12 @@ class DetectionTab extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  const DetectionTab({super.key, required this.text, this.selected = false, required this.onTap});
+  const DetectionTab({
+    super.key,
+    required this.text,
+    this.selected = false,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -134,6 +215,7 @@ class DetectionTab extends StatelessWidget {
 }
 
 class DetectionCard extends StatelessWidget {
+  final String title;
   final String time;
   final bool urgency;
   final String action;
@@ -142,6 +224,7 @@ class DetectionCard extends StatelessWidget {
 
   const DetectionCard({
     super.key,
+    required this.title,
     required this.time,
     required this.urgency,
     required this.action,
@@ -166,7 +249,7 @@ class DetectionCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("Fall Detected",
+                Text(title,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,

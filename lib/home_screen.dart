@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
+import 'QA.dart';
 import 'mood_booster.dart';
 import 'ScheduleScreen.dart';
 import '360_view.dart';
@@ -214,7 +214,12 @@ class HomeScreen extends StatelessWidget {
                     child: Row(
                       children: [
                         Expanded(
-                          child: _buildCard("Q & A", Icons.question_answer, "Open Now", () {}),
+                          child: _buildCard("Q & A", Icons.question_answer, "Open Now", () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const QAPage()),
+                            );
+                          }),
                         ),
                         const SizedBox(width: 11),
                         Expanded(

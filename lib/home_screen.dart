@@ -9,7 +9,7 @@ import 'detection.dart';
 import 'home_clean.dart';
 import 'status.dart';
 import 'settings.dart';
-
+import 'emergency.dart';
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
 

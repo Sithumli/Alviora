@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'home_screen.dart'; // adjust the path if needed
 import 'mood_music.dart' as music; // import your playlist screen
 import 'joy_gallery.dart' as photo;
-
+import 'mood_chat.dart';
+import 'meditation.dart';
+import 'deep_breathing.dart';
+import 'quick_breathing.dart';
 class MoodBoosterScreen extends StatelessWidget {
   const MoodBoosterScreen({Key? key}) : super(key: key);
 
@@ -91,12 +94,21 @@ class MoodBoosterScreen extends StatelessWidget {
                   crossAxisSpacing: 20,
                   childAspectRatio: 3 / 2.5,
                   children: [
-                    const _ActivityTile(
+                    _ActivityTile(
                       icon: Icons.self_improvement,
                       title: 'Meditation',
                       description: 'Simple breathing exercise for instant calm',
                       time: '10 mins',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MeditationSchedulerPage(),
+                          ),
+                        );
+                      },
                     ),
+
                     _ActivityTile(
                       icon: Icons.music_note,
                       title: 'Mood Music',
@@ -126,24 +138,53 @@ class MoodBoosterScreen extends StatelessWidget {
                       },
                     ),
 
-                    const _ActivityTile(
+                    _ActivityTile(
                       icon: Icons.chat,
                       title: 'Positive Chat',
                       description: 'Connect with supportive community',
                       time: '10 mins',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PositiveChatPage(),
+                          ),
+                        );
+                      },
                     ),
-                    const _ActivityTile(
+
+                    _ActivityTile(
                       icon: Icons.spa,
                       title: 'Deep Breathing',
                       description: 'Simple breathing exercise for instant calm',
                       time: '5 mins',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => GrannyScheduleBreathingPage(),
+                          ),
+                        );
+                      },
                     ),
-                    const _ActivityTile(
+
+
+                    // Remove `const` here, so onTap can be a non-const function:
+                    _ActivityTile(
                       icon: Icons.flash_on,
                       title: 'Quick Breathing',
                       description: 'Simple breathing exercise for instant calm',
                       time: '3 mins',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => GrannyScheduleQuickBreathingPage(),
+                          ),
+                        );
+                      },
                     ),
+
                   ],
                 ),
               ),

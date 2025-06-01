@@ -78,6 +78,12 @@ flutter:
     - assets/fall.png
     - assets/the_hills.jpeg
     - assets/song.jpeg
+    - assets/joy1.png
+    - assets/joy2.png
+    - assets/joy3.png
+    - assets/joy4.png
+    - assets/joy5.png
+    - assets/joy6.png
 
 
   fonts:

@@ -4,6 +4,8 @@ import 'ScheduleScreen.dart';
 import '360_view.dart';
 import 'alerts_screen.dart';
 import 'detection.dart';
+import 'home_clean.dart';
+import 'status.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -78,7 +80,14 @@ class HomeScreen extends StatelessWidget {
                             ),
                           );
                         }),
-                        _buildButton(Icons.monitor_heart, "Status", () {}),
+                        _buildButton(Icons.monitor_heart, "Status", () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => StatusScreen(),
+                            ),
+                          );
+                        }),
                         _buildButton(Icons.notifications, "Alerts", () {
                           Navigator.push(
                             context,
@@ -87,7 +96,14 @@ class HomeScreen extends StatelessWidget {
                             ),
                           );
                         }),
-                        _buildButton(Icons.cleaning_services, "Home Clean", () {}),
+                        _buildButton(Icons.cleaning_services, "Home Clean", () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => HomeMaintenanceStatus(),
+                            ),
+                          );
+                        }),
                         _buildButton(Icons.visibility, "Detection", () {
                           Navigator.push(
                             context,

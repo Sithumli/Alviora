@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart'; // adjust the path as necessary
+import 'home_screen.dart'; // adjust the path if needed
+import 'mood_music.dart' as music; // import your playlist screen
 
 class MoodBoosterScreen extends StatelessWidget {
   const MoodBoosterScreen({Key? key}) : super(key: key);
@@ -30,7 +31,7 @@ class MoodBoosterScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
 
-              // Mood Booster Card with background stars
+              // Mood Booster Card
               Container(
                 width: double.infinity,
                 height: 125,
@@ -40,7 +41,6 @@ class MoodBoosterScreen extends StatelessWidget {
                 ),
                 child: Stack(
                   children: [
-                    // Background stars image
                     ClipRRect(
                       borderRadius: BorderRadius.circular(20),
                       child: Image.asset(
@@ -50,7 +50,6 @@ class MoodBoosterScreen extends StatelessWidget {
                         height: double.infinity,
                       ),
                     ),
-                    // Text content
                     Padding(
                       padding: const EdgeInsets.all(20),
                       child: Column(
@@ -72,7 +71,6 @@ class MoodBoosterScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    // Robot image
                     Positioned(
                       right: 0,
                       top: 10,
@@ -84,15 +82,15 @@ class MoodBoosterScreen extends StatelessWidget {
 
               const SizedBox(height: 30),
 
-              // Activity Grid
+              // Grid of Activities
               Expanded(
                 child: GridView.count(
                   crossAxisCount: 2,
                   mainAxisSpacing: 20,
                   crossAxisSpacing: 20,
                   childAspectRatio: 3 / 2.5,
-                  children: const [
-                    _ActivityTile(
+                  children: [
+                    const _ActivityTile(
                       icon: Icons.self_improvement,
                       title: 'Meditation',
                       description: 'Simple breathing exercise for instant calm',
@@ -103,26 +101,34 @@ class MoodBoosterScreen extends StatelessWidget {
                       title: 'Mood Music',
                       description: 'Curated playlists to match and lift your mood.',
                       time: '5 mins',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const music.CalmingPlaylistPage(),
+                          ),
+                        );
+                      },
                     ),
-                    _ActivityTile(
+                    const _ActivityTile(
                       icon: Icons.photo,
                       title: 'Joy Gallery',
                       description: 'Your collection of happy moments',
                       time: '2 mins',
                     ),
-                    _ActivityTile(
+                    const _ActivityTile(
                       icon: Icons.chat,
                       title: 'Positive Chat',
                       description: 'Connect with supportive community',
                       time: '10 mins',
                     ),
-                    _ActivityTile(
+                    const _ActivityTile(
                       icon: Icons.spa,
                       title: 'Deep Breathing',
                       description: 'Simple breathing exercise for instant calm',
                       time: '5 mins',
                     ),
-                    _ActivityTile(
+                    const _ActivityTile(
                       icon: Icons.flash_on,
                       title: 'Quick Breathing',
                       description: 'Simple breathing exercise for instant calm',
@@ -144,49 +150,54 @@ class _ActivityTile extends StatelessWidget {
   final String title;
   final String description;
   final String time;
+  final VoidCallback? onTap;
 
   const _ActivityTile({
     required this.icon,
     required this.title,
     required this.description,
     required this.time,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFBDD1FD),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.15),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, color: Colors.deepPurple, size: 28),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            description,
-            style: const TextStyle(fontSize: 11, color: Colors.black87),
-          ),
-          const Spacer(),
-          Text(
-            time,
-            style: const TextStyle(fontSize: 12, color: Colors.black54),
-          )
-        ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: const Color(0xFFBDD1FD),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.15),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: Colors.deepPurple, size: 28),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              description,
+              style: const TextStyle(fontSize: 11, color: Colors.black87),
+            ),
+            const Spacer(),
+            Text(
+              time,
+              style: const TextStyle(fontSize: 12, color: Colors.black54),
+            )
+          ],
+        ),
       ),
     );
   }

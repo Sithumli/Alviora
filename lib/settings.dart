@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
+import 'home_screen.dart';
 void main() {
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
@@ -7,8 +8,22 @@ void main() {
   ));
 }
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  String? userEmail;
+
+  @override
+  void initState() {
+    super.initState();
+    final user = FirebaseAuth.instance.currentUser;
+    userEmail = user?.email ?? 'No email found';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,8 +38,13 @@ class SettingsScreen extends StatelessWidget {
         ),
         centerTitle: false,
         leading: IconButton(
-          icon: const Icon(Icons.settings, color: Colors.blue),
-          onPressed: () {},
+          icon: const Icon(Icons.home_rounded, color: Colors.blue),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(builder: (context) => const HomeScreen()),
+            );
+          },
         ),
       ),
       body: Padding(
@@ -61,20 +81,22 @@ class SettingsScreen extends StatelessWidget {
               "Adam Smith",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            const Text(
-              "adam@mail.com",
-              style: TextStyle(fontSize: 14, color: Colors.grey),
+            Text(
+              userEmail ?? '',
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
             const SizedBox(height: 24),
             const SettingsItem(icon: Icons.person, title: 'Account'),
             const SettingsItem(icon: Icons.notifications, title: 'Notification'),
             const SettingsItem(icon: Icons.remove_red_eye, title: 'Appearance'),
-            const SettingsItem(icon: Icons.lock, title: 'Privacy & Security'),
-            const SettingsItem(icon: Icons.volume_up, title: 'Sound'),
+            const SettingsItem(icon: Icons.password_rounded, title: 'Change password'),
             const SettingsItem(icon: Icons.language, title: 'Language'),
             const Spacer(),
             GestureDetector(
-              onTap: () {},
+              onTap: () async {
+                await FirebaseAuth.instance.signOut();
+                // Add logout logic here (e.g., navigate to login screen)
+              },
               child: Container(
                 width: double.infinity,
                 height: 50,

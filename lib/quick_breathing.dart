@@ -99,6 +99,12 @@ class _GrannyScheduleQuickBreathingPageState extends State<GrannyScheduleQuickBr
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.black,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
       ),
       extendBodyBehindAppBar: true,
       body: Container(

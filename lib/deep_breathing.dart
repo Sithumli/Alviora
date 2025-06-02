@@ -24,6 +24,7 @@ class _GrannyScheduleBreathingPageState extends State<GrannyScheduleBreathingPag
       firstDate: initialDate,
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
+
     if (date != null) {
       setState(() {
         _selectedDate = date;
@@ -90,9 +91,18 @@ class _GrannyScheduleBreathingPageState extends State<GrannyScheduleBreathingPag
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text('Schedule Breathing', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+        title: Text(
+          'Schedule Breathing',
+          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
       ),
       body: Stack(
         children: [

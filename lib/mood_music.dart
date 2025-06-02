@@ -1,7 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'home_screen.dart' as home;
+import 'package:http/http.dart' as http;
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(const MyApp());
 }
 
@@ -10,15 +15,106 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: const CalmingPlaylistPage(),
+      home: CalmingPlaylistPage(),
     );
   }
 }
 
-class CalmingPlaylistPage extends StatelessWidget {
+class CalmingPlaylistPage extends StatefulWidget {
   const CalmingPlaylistPage({super.key});
+
+  @override
+  State<CalmingPlaylistPage> createState() => _CalmingPlaylistPageState();
+}
+
+class _CalmingPlaylistPageState extends State<CalmingPlaylistPage> {
+  List<Map<String, String>> _songs = [];
+
+  String _selectedTitle = 'The Hills';
+  String _selectedArtist = 'Weeknd';
+  String _selectedImage =
+      'https://i.scdn.co/image/ab67616d0000b273c9cdbbeed872e1ca7e9b179a';
+
+  final database = FirebaseDatabase.instanceFor(
+    app: Firebase.app(),
+    databaseURL: 'https://alviora-10650-default-rtdb.firebaseio.com/',
+  );
+  late final DatabaseReference _dbRef;
+
+  @override
+  void initState() {
+    super.initState();
+    _dbRef = database.ref('selected_song');
+  }
+
+  Future<void> searchSongs(String query) async {
+    final url = Uri.parse('https://api.deezer.com/search?q=$query');
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final List tracks = data['data'];
+
+      final results = tracks.map<Map<String, String>>((track) {
+        return {
+          'title': track['title'],
+          'artist': track['artist']['name'],
+          'image': track['album']['cover_medium'] ?? '',
+        };
+      }).toList();
+
+      setState(() {
+        _songs = results;
+      });
+    } else {
+      print('Error fetching songs');
+    }
+  }
+
+  void _openSearchDialog() {
+    String query = '';
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Search Songs'),
+        content: TextField(
+          onChanged: (value) => query = value,
+          decoration: const InputDecoration(hintText: 'Type song name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              if (query.isNotEmpty) searchSongs(query);
+            },
+            child: const Text('Search'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _selectSong(Map<String, String> song) async {
+    setState(() {
+      _selectedTitle = song['title']!;
+      _selectedArtist = song['artist']!;
+      _selectedImage = song['image']!;
+    });
+
+    try {
+      await _dbRef.set({
+        'title': _selectedTitle,
+        'artist': _selectedArtist,
+        'image': _selectedImage,
+        'timestamp': ServerValue.timestamp,
+      });
+      print('Song info sent to Firebase');
+    } catch (e) {
+      print('Error sending song info to Firebase: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,62 +124,65 @@ class CalmingPlaylistPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Top Bar
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const home.HomeScreen()),
-                      );
-                    },
-                    child: const Icon(Icons.home_rounded),
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back_ios),
+                    onPressed: () => Navigator.pop(context),
                   ),
                   const Text(
                     'Calming Playlist',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                   ),
-                  const Icon(Icons.menu),
+                  GestureDetector(
+                    onTap: _openSearchDialog,
+                    child: const Icon(Icons.search),
+                  ),
                 ],
               ),
             ),
 
             const SizedBox(height: 10),
 
-            // Album Art
+            // Selected Album Art
             Center(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
-                child: Image.asset(
-                  'assets/the_hills.jpeg',
+                child: _selectedImage.isNotEmpty
+                    ? Image.network(
+                  _selectedImage,
                   width: 200,
                   height: 200,
                   fit: BoxFit.cover,
-                ),
+                  errorBuilder: (_, __, ___) =>
+                  const Icon(Icons.music_note, size: 200),
+                )
+                    : const Icon(Icons.music_note, size: 200),
               ),
             ),
 
             const SizedBox(height: 10),
 
-            // Song Info
             Column(
               children: [
-                const Text(
-                  'The hills',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                Text(
+                  _selectedTitle,
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'Weeknd',
-                  style: TextStyle(color: Colors.grey),
+                Text(
+                  _selectedArtist,
+                  style: const TextStyle(color: Colors.grey),
                 ),
                 const SizedBox(height: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(10),
@@ -95,7 +194,6 @@ class CalmingPlaylistPage extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // Waveform Placeholder
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
               child: Container(
@@ -110,14 +208,14 @@ class CalmingPlaylistPage extends StatelessWidget {
 
             const SizedBox(height: 20),
 
-            // Recommended List
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text('Recommended', style: TextStyle(fontWeight: FontWeight.bold)),
-                  Icon(Icons.search),
+                children: [
+                  Text('Recommended',
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  SizedBox(width: 24),
                 ],
               ),
             ),
@@ -126,16 +224,28 @@ class CalmingPlaylistPage extends StatelessWidget {
 
             Expanded(
               child: ListView(
-                children: [
-                  buildSongTile('starboy', 'weeknd', 'assets/song.jpeg'),
-                  buildSongTile('reminder', 'weeknd', 'assets/song.jpeg'),
-                  buildSongTile('party monster', 'weeknd', 'assets/song.jpeg'),
-                  buildSongTile('gasoline', 'weeknd', 'assets/song.jpeg'),
-                ],
+                children: _songs.isEmpty
+                    ? [
+                  buildSongTile('starboy', 'weeknd',
+                      'https://cdns-images.dzcdn.net/images/cover/43ec7bb80e6a7d27d1e9a332b72af34f/250x250-000000-80-0-0.jpg',
+                      onTap: () {
+                        _selectSong({
+                          'title': 'starboy',
+                          'artist': 'weeknd',
+                          'image':
+                          'https://cdns-images.dzcdn.net/images/cover/43ec7bb80e6a7d27d1e9a332b72af34f/250x250-000000-80-0-0.jpg',
+                        });
+                      }),
+                ]
+                    : _songs.map((song) {
+                  return buildSongTile(song['title']!, song['artist']!,
+                      song['image']!, onTap: () {
+                        _selectSong(song);
+                      });
+                }).toList(),
               ),
             ),
 
-            // Bottom Bar
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
@@ -144,7 +254,7 @@ class CalmingPlaylistPage extends StatelessWidget {
                   BoxShadow(
                     color: Colors.black12,
                     blurRadius: 10,
-                    offset: Offset(0, -2),
+                    offset: const Offset(0, -2),
                   ),
                 ],
               ),
@@ -155,14 +265,25 @@ class CalmingPlaylistPage extends StatelessWidget {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.asset('assets/the_hills.jpeg', height: 40, width: 40),
+                        child: _selectedImage.isNotEmpty
+                            ? Image.network(
+                          _selectedImage,
+                          height: 40,
+                          width: 40,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                          const Icon(Icons.music_note),
+                        )
+                            : const Icon(Icons.music_note, size: 40),
                       ),
                       const SizedBox(width: 8),
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('The hills'),
-                          Text('Weeknd', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          Text(_selectedTitle),
+                          Text(_selectedArtist,
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.grey)),
                         ],
                       ),
                     ],
@@ -185,35 +306,23 @@ class CalmingPlaylistPage extends StatelessWidget {
     );
   }
 
-  Widget buildSongTile(String title, String artist, String imagePath) {
+  static Widget buildSongTile(String title, String artist, String imagePath,
+      {VoidCallback? onTap}) {
     return ListTile(
+      onTap: onTap,
       leading: ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: Image.asset(imagePath, width: 50, height: 50, fit: BoxFit.cover),
+        child: Image.network(
+          imagePath,
+          width: 50,
+          height: 50,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => const Icon(Icons.music_note),
+        ),
       ),
       title: Text(title),
       subtitle: Text(artist),
       trailing: const Icon(Icons.more_vert),
-    );
-  }
-}
-
-// ======================
-// HOME SCREEN CLASS
-// ======================
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Home'),
-        backgroundColor: Colors.blueAccent,
-      ),
-      body: const Center(
-        child: Text('Welcome to the Home Screen!'),
-      ),
     );
   }
 }

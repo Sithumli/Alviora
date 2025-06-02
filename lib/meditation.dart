@@ -130,6 +130,12 @@ class _MeditationSchedulerPageState extends State<MeditationSchedulerPage> {
         foregroundColor: Colors.black,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
       ),
       body: Stack(
         children: [

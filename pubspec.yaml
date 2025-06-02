@@ -33,7 +33,7 @@ dependencies:
   url_launcher: ^6.1.12
   intl: ^0.18.1
   webview_flutter: ^4.2.2
-  http: 1.4.0
+  http: ^1.4.0
   # Firebase Core (required for any Firebase features)
   firebase_core: ^3.13.0
 
@@ -43,8 +43,12 @@ dependencies:
   # Cloud Firestore (to store user data, mood, health etc.)
   cloud_firestore: ^5.6.7
 
+  # For playing audio
+  audioplayers: ^5.2.1
+
   # Cupertino Icons for iOS
   cupertino_icons: ^1.0.8
+  firebase_database: ^11.3.6
 
 
 dev_dependencies:

@@ -19,14 +19,21 @@ class JoyGalleryPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Top Bar
+            // Top Bar with iOS-style back button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Icon(Icons.home_rounded),
-                  Icon(Icons.menu),
+                children: [
+                  // iOS-style back button
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      child: const Icon(Icons.arrow_back_ios_new, size: 20),
+                    ),
+                  ),
+                  const Icon(Icons.menu),
                 ],
               ),
             ),

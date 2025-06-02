@@ -40,12 +40,17 @@ dependencies:
   # Firebase Authentication (for email login/signup)
   firebase_auth: ^5.5.3
 
+  image_picker: ^1.0.0
+
+  firebase_storage: ^12.4.6
+
   # Cloud Firestore (to store user data, mood, health etc.)
   cloud_firestore: ^5.6.7
 
   # Cupertino Icons for iOS
   cupertino_icons: ^1.0.8
 
+  file_picker: ^10.1.9
 
 dev_dependencies:
   flutter_test:

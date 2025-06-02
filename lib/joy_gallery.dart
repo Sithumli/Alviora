@@ -89,28 +89,28 @@ class _JoyGalleryPageState extends State<JoyGalleryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final List<String> imagePaths = [
+      'assets/joy1.png',
+      'assets/joy2.png',
+      'assets/joy3.png',
+      'assets/joy4.png',
+      'assets/joy5.png',
+      'assets/joy6.png',
+    ];
+
     return Scaffold(
       backgroundColor: const Color(0xFFF7F8FC),
       body: SafeArea(
         child: Column(
           children: [
-            // Top Bar
+            // Top Bar with iOS-style back button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                            builder: (context) => const HomeScreen()),
-                      );
-                    },
-                    child: const Icon(Icons.home_rounded),
-                  ),
-                  const Icon(Icons.menu),
+                children: const [
+                  Icon(Icons.home_rounded),
+                  Icon(Icons.menu),
                 ],
               ),
             ),
@@ -164,7 +164,7 @@ class _JoyGalleryPageState extends State<JoyGalleryPage> {
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: GridView.builder(
-                  itemCount: imageUrls.length + 1,
+                  itemCount: imagePaths.length + 1,
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
                     mainAxisSpacing: 12,
@@ -172,23 +172,20 @@ class _JoyGalleryPageState extends State<JoyGalleryPage> {
                     childAspectRatio: 1.0,
                   ),
                   itemBuilder: (context, index) {
-                    if (index < imageUrls.length) {
+                    if (index < imagePaths.length) {
                       return ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          imageUrls[index],
+                        child: Image.asset(
+                          imagePaths[index],
                           fit: BoxFit.cover,
-                          loadingBuilder: (context, child, progress) {
-                            if (progress == null) return child;
-                            return const Center(
-                                child: CircularProgressIndicator());
-                          },
                         ),
                       );
                     } else {
-                      // Add Button
+                      // Last item is the add button
                       return GestureDetector(
-                        onTap: showUploadDialog,
+                        onTap: () {
+                          // Add image logic here
+                        },
                         child: Container(
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.blueAccent),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class MeditationSchedulerPage extends StatefulWidget {
   const MeditationSchedulerPage({super.key});
@@ -48,13 +49,10 @@ class _MeditationSchedulerPageState extends State<MeditationSchedulerPage> {
       lastDate: DateTime(now.year + 1),
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: ColorScheme.light(
+          colorScheme: const ColorScheme.light(
             primary: Color(0xFF368FF5),
             onPrimary: Colors.white,
             onSurface: Color(0xFF368FF5),
-          ),
-          textButtonTheme: TextButtonThemeData(
-            style: TextButton.styleFrom(foregroundColor: Colors.black),
           ),
         ),
         child: child!,
@@ -72,16 +70,13 @@ class _MeditationSchedulerPageState extends State<MeditationSchedulerPage> {
       initialTime: _selectedTime ?? now,
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
-          colorScheme: ColorScheme.light(
+          colorScheme: const ColorScheme.light(
             primary: Color(0xFF368FF5),
             onPrimary: Colors.white,
             onSurface: Color(0xFF368FF5),
           ),
-          timePickerTheme: TimePickerThemeData(
+          timePickerTheme: const TimePickerThemeData(
             dialHandColor: Colors.black,
-          ),
-          textButtonTheme: TextButtonThemeData(
-            style: TextButton.styleFrom(foregroundColor: Colors.black),
           ),
         ),
         child: child!,
@@ -99,7 +94,7 @@ class _MeditationSchedulerPageState extends State<MeditationSchedulerPage> {
       );
       return;
     }
-    // Here you can add your scheduling logic (e.g., send to backend or local notifications)
+
     final scheduledDateTime = DateTime(
       _selectedDate!.year,
       _selectedDate!.month,
@@ -108,7 +103,6 @@ class _MeditationSchedulerPageState extends State<MeditationSchedulerPage> {
       _selectedTime!.minute,
     );
 
-    // Show confirmation dialog
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
@@ -130,128 +124,151 @@ class _MeditationSchedulerPageState extends State<MeditationSchedulerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: const Text('Schedule Meditation'),
-        backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
-      backgroundColor: Colors.white,
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: ListView(
-          children: [
-            const Text(
-              'Set a time for a calm breathing session for your loved one.',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.black87,
-                fontWeight: FontWeight.w500,
+      body: Stack(
+        children: [
+          // Gradient background
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFFBE7F5),
+                  Color(0xFFE6F0FF),
+                  Color(0xFFA2CDFF),
+                ],
               ),
             ),
-            const SizedBox(height: 24),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: ListView(
+                children: [
+                  Text(
+                    'Set a time for a calm breathing session for your loved one.',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
 
-            // Date Picker
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: ListTile(
-                leading: const Icon(Icons.calendar_today, color: Colors.black87),
-                title: const Text('Date'),
-                subtitle: Text(_formattedDate),
-                onTap: _pickDate,
-                trailing: const Icon(Icons.keyboard_arrow_down),
+                  _buildCardTile(
+                    icon: Icons.calendar_today,
+                    title: 'Date',
+                    subtitle: _formattedDate,
+                    onTap: _pickDate,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  _buildCardTile(
+                    icon: Icons.access_time,
+                    title: 'Time',
+                    subtitle: _formattedTime,
+                    onTap: _pickTime,
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  _buildDropdownCard(
+                    label: 'Select Meditation Type',
+                    value: _selectedMeditation,
+                    items: meditationTypes,
+                    onChanged: (val) => setState(() => _selectedMeditation = val),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  _buildDropdownCard(
+                    label: 'Select Frequency',
+                    value: _selectedFrequency,
+                    items: frequencies,
+                    onChanged: (val) => setState(() => _selectedFrequency = val!),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: _scheduleSession,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      child: Text(
+                        'Schedule Session',
+                        style: GoogleFonts.inter(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
 
-            const SizedBox(height: 16),
+  Widget _buildCardTile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: ListTile(
+        leading: Icon(icon, color: Colors.black87),
+        title: Text(title),
+        subtitle: Text(subtitle),
+        trailing: const Icon(Icons.keyboard_arrow_down),
+        onTap: onTap,
+      ),
+    );
+  }
 
-            // Time Picker
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: ListTile(
-                leading: const Icon(Icons.access_time, color: Colors.black87),
-                title: const Text('Time'),
-                subtitle: Text(_formattedTime),
-                onTap: _pickTime,
-                trailing: const Icon(Icons.keyboard_arrow_down),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Meditation Type Dropdown
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: DropdownButton<String>(
-                  value: _selectedMeditation,
-                  hint: const Text('Select Meditation Type'),
-                  isExpanded: true,
-                  icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black87),
-                  underline: const SizedBox(),
-                  items: meditationTypes
-                      .map((type) => DropdownMenuItem(
-                    value: type,
-                    child: Text(type, style: const TextStyle(color: Colors.black87)),
-                  ))
-                      .toList(),
-                  onChanged: (val) {
-                    setState(() => _selectedMeditation = val);
-                  },
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Frequency Dropdown
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: DropdownButton<String>(
-                  value: _selectedFrequency,
-                  isExpanded: true,
-                  icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black87),
-                  underline: const SizedBox(),
-                  items: frequencies
-                      .map((freq) => DropdownMenuItem(
-                    value: freq,
-                    child: Text(freq, style: const TextStyle(color: Colors.black87)),
-                  ))
-                      .toList(),
-                  onChanged: (val) {
-                    if (val != null) {
-                      setState(() => _selectedFrequency = val);
-                    }
-                  },
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Schedule Button
-            SizedBox(
-              width: double.infinity,
-              height: 52,
-              child: ElevatedButton(
-                onPressed: _scheduleSession,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.black,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text(
-                  'Schedule Session',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ],
+  Widget _buildDropdownCard({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required Function(String?) onChanged,
+  }) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: DropdownButton<String>(
+          value: value,
+          hint: Text(label),
+          isExpanded: true,
+          icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black87),
+          underline: const SizedBox(),
+          items: items
+              .map((type) => DropdownMenuItem(
+            value: type,
+            child: Text(type, style: const TextStyle(color: Colors.black87)),
+          ))
+              .toList(),
+          onChanged: onChanged,
         ),
       ),
     );

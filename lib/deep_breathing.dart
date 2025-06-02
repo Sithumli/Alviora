@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class GrannyScheduleBreathingPage extends StatefulWidget {
   const GrannyScheduleBreathingPage({Key? key}) : super(key: key);
@@ -35,7 +36,6 @@ class _GrannyScheduleBreathingPageState extends State<GrannyScheduleBreathingPag
       context: context,
       initialTime: _selectedTime ?? TimeOfDay.now(),
       builder: (context, child) {
-        // Classic UK style — 24 hour format forced
         return MediaQuery(
           data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
           child: child!,
@@ -56,7 +56,7 @@ class _GrannyScheduleBreathingPageState extends State<GrannyScheduleBreathingPag
       );
       return;
     }
-    // Combine date and time into a DateTime for scheduling
+
     final scheduledDateTime = DateTime(
       _selectedDate!.year,
       _selectedDate!.month,
@@ -65,21 +65,21 @@ class _GrannyScheduleBreathingPageState extends State<GrannyScheduleBreathingPag
       _selectedTime!.minute,
     );
 
-    // Here, you would send this scheduledDateTime, _recurrence, and _durationMinutes to your scheduling backend or state
-
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Schedule Saved'),
         content: Text(
-            'Deep breathing session scheduled for\n${scheduledDateTime.toLocal()} \nDuration: $_durationMinutes minutes\nRecurrence: $_recurrence'),
+          'Deep breathing session scheduled for\n${scheduledDateTime.toLocal()} \nDuration: $_durationMinutes minutes\nRecurrence: $_recurrence',
+        ),
         actions: [
           TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context); // go back after save
-              },
-              child: const Text('OK'))
+            onPressed: () {
+              Navigator.pop(context);
+              Navigator.pop(context);
+            },
+            child: const Text('OK'),
+          )
         ],
       ),
     );
@@ -87,137 +87,148 @@ class _GrannyScheduleBreathingPageState extends State<GrannyScheduleBreathingPag
 
   @override
   Widget build(BuildContext context) {
-    const labelStyle = TextStyle(
-      fontSize: 20,
-      fontWeight: FontWeight.w600,
-      color: Colors.black87,
-    );
-
-    const valueStyle = TextStyle(
-      fontSize: 18,
-      color: Colors.black54,
-    );
-
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Schedule Deep Breathing'),
-        backgroundColor: Colors.indigo[700],
+        title: Text('Schedule Breathing', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
-      backgroundColor: Colors.grey[100],
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Select Date:', style: labelStyle),
-            const SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: _pickDate,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
-                side: const BorderSide(color: Colors.indigo),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-              ),
-              child: Text(
-                _selectedDate == null
-                    ? 'Choose Date'
-                    : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
-                style: const TextStyle(fontSize: 18, color: Colors.indigo),
+      body: Stack(
+        children: [
+          // Background gradient
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xADFBE7F5),
+                  Color(0xFFE6F0FF),
+                  Color(0xFFA2CDFF),
+                ],
               ),
             ),
-
-            const SizedBox(height: 24),
-
-            Text('Select Time:', style: labelStyle),
-            const SizedBox(height: 8),
-            ElevatedButton(
-              onPressed: _pickTime,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
-                side: const BorderSide(color: Colors.indigo),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-              ),
-              child: Text(
-                _selectedTime == null
-                    ? 'Choose Time'
-                    : _selectedTime!.format(context),
-                style: const TextStyle(fontSize: 18, color: Colors.indigo),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            Text('Recurrence:', style: labelStyle),
-            const SizedBox(height: 8),
-            DropdownButtonFormField<String>(
-              value: _recurrence,
-              items: recurrenceOptions
-                  .map((option) => DropdownMenuItem(
-                value: option,
-                child: Text(option, style: const TextStyle(fontSize: 18)),
-              ))
-                  .toList(),
-              onChanged: (val) {
-                if (val != null) {
-                  setState(() {
-                    _recurrence = val;
-                  });
-                }
-              },
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            Text('Duration (minutes):', style: labelStyle),
-            const SizedBox(height: 8),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [3, 5, 7].map((min) {
-                final selected = _durationMinutes == min;
-                return ElevatedButton(
-                  onPressed: () => setState(() => _durationMinutes = min),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: selected ? Colors.indigo : Colors.grey[300],
-                    minimumSize: const Size(80, 50),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildLabel("Select Date:"),
+                  _buildButton(
+                    text: _selectedDate == null
+                        ? "Choose Date"
+                        : "${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}",
+                    onTap: _pickDate,
                   ),
-                  child: Text(
-                    '$min',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: selected ? Colors.white : Colors.black87,
+                  const SizedBox(height: 16),
+                  _buildLabel("Select Time:"),
+                  _buildButton(
+                    text: _selectedTime == null
+                        ? "Choose Time"
+                        : _selectedTime!.format(context),
+                    onTap: _pickTime,
+                  ),
+                  const SizedBox(height: 16),
+                  _buildLabel("Recurrence:"),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: DropdownButtonFormField<String>(
+                      value: _recurrence,
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _recurrence = value;
+                          });
+                        }
+                      },
+                      items: recurrenceOptions
+                          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                          .toList(),
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(borderSide: BorderSide.none),
+                        contentPadding: EdgeInsets.symmetric(horizontal: 12),
+                      ),
                     ),
                   ),
-                );
-              }).toList(),
-            ),
-
-            const Spacer(),
-
-            Center(
-              child: ElevatedButton(
-                onPressed: _saveSchedule,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.indigo[700],
-                  minimumSize: const Size(double.infinity, 55),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ),
-                child: const Text(
-                  'Save Schedule',
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
+                  const SizedBox(height: 16),
+                  _buildLabel("Duration (minutes):"),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [3, 5, 7].map((min) {
+                      final selected = _durationMinutes == min;
+                      return ElevatedButton(
+                        onPressed: () => setState(() => _durationMinutes = min),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: selected ? Colors.indigo : Colors.white,
+                          foregroundColor: selected ? Colors.white : Colors.black,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          minimumSize: const Size(80, 50),
+                        ),
+                        child: Text(
+                          '$min',
+                          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 18),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                  const Spacer(),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 55,
+                    child: ElevatedButton(
+                      onPressed: _saveSchedule,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      child: Text(
+                        "Save Schedule",
+                        style: GoogleFonts.inter(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  )
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildLabel(String text) {
+    return Text(
+      text,
+      style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600),
+    );
+  }
+
+  Widget _buildButton({required String text, required VoidCallback onTap}) {
+    return ElevatedButton(
+      onPressed: onTap,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.blueAccent,
+        minimumSize: const Size(double.infinity, 50),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 0,
+        side: const BorderSide(color: Colors.blueAccent),
+      ),
+      child: Text(text, style: GoogleFonts.inter(fontSize: 16)),
     );
   }
 }

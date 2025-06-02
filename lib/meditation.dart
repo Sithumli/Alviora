@@ -49,9 +49,9 @@ class _MeditationSchedulerPageState extends State<MeditationSchedulerPage> {
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: ColorScheme.light(
-            primary: Colors.black,
+            primary: Color(0xFF368FF5),
             onPrimary: Colors.white,
-            onSurface: Colors.black87,
+            onSurface: Color(0xFF368FF5),
           ),
           textButtonTheme: TextButtonThemeData(
             style: TextButton.styleFrom(foregroundColor: Colors.black),
@@ -73,9 +73,9 @@ class _MeditationSchedulerPageState extends State<MeditationSchedulerPage> {
       builder: (context, child) => Theme(
         data: Theme.of(context).copyWith(
           colorScheme: ColorScheme.light(
-            primary: Colors.black,
+            primary: Color(0xFF368FF5),
             onPrimary: Colors.white,
-            onSurface: Colors.black87,
+            onSurface: Color(0xFF368FF5),
           ),
           timePickerTheme: TimePickerThemeData(
             dialHandColor: Colors.black,
@@ -246,7 +246,7 @@ class _MeditationSchedulerPageState extends State<MeditationSchedulerPage> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 child: const Text(
-                  '✅ Schedule Session',
+                  'Schedule Session',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ),

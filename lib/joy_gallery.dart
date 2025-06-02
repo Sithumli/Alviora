@@ -25,7 +25,7 @@ class JoyGalleryPage extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: const [
-                  Icon(Icons.home_outlined),
+                  Icon(Icons.home_rounded),
                   Icon(Icons.menu),
                 ],
               ),

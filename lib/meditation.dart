@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MeditationSchedulerPage extends StatefulWidget {
   const MeditationSchedulerPage({super.key});
@@ -26,6 +27,8 @@ class _MeditationSchedulerPageState extends State<MeditationSchedulerPage> {
     'Daily',
     'Weekdays',
   ];
+
+  bool _isScheduling = false; // to disable button when processing
 
   String get _formattedDate {
     if (_selectedDate == null) return 'Select Date';
@@ -87,13 +90,15 @@ class _MeditationSchedulerPageState extends State<MeditationSchedulerPage> {
     }
   }
 
-  void _scheduleSession() {
+  Future<void> _scheduleSession() async {
     if (_selectedDate == null || _selectedTime == null || _selectedMeditation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select date, time, and meditation type')),
       );
       return;
     }
+
+    setState(() => _isScheduling = true);
 
     final scheduledDateTime = DateTime(
       _selectedDate!.year,
@@ -103,22 +108,48 @@ class _MeditationSchedulerPageState extends State<MeditationSchedulerPage> {
       _selectedTime!.minute,
     );
 
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Session Scheduled'),
-        content: Text(
-          'Your meditation session "${_selectedMeditation!}" has been scheduled on '
-              '${DateFormat.yMMMEd().add_jm().format(scheduledDateTime)}.\nFrequency: $_selectedFrequency',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+    try {
+      // Store session in Firestore
+      await FirebaseFirestore.instance.collection('meditation_sessions').add({
+        'meditationType': _selectedMeditation,
+        'scheduledDateTime': scheduledDateTime.toUtc(), // always store in UTC
+        'frequency': _selectedFrequency,
+        'createdAt': DateTime.now().toUtc(),
+      });
+
+      setState(() => _isScheduling = false);
+
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Session Scheduled'),
+          content: Text(
+            'Your meditation session "${_selectedMeditation!}" has been scheduled on '
+                '${DateFormat.yMMMEd().add_jm().format(scheduledDateTime)}.\nFrequency: $_selectedFrequency',
           ),
-        ],
-      ),
-    );
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+
+      // Optional: reset selections or keep them as is
+      // setState(() {
+      //   _selectedDate = null;
+      //   _selectedTime = null;
+      //   _selectedMeditation = null;
+      //   _selectedFrequency = 'Once';
+      // });
+
+    } catch (e) {
+      setState(() => _isScheduling = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to schedule session: $e')),
+      );
+    }
   }
 
   @override
@@ -208,12 +239,14 @@ class _MeditationSchedulerPageState extends State<MeditationSchedulerPage> {
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: _scheduleSession,
+                      onPressed: _isScheduling ? null : _scheduleSession,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
+                        backgroundColor: _isScheduling ? Colors.grey : Colors.blue,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                       ),
-                      child: Text(
+                      child: _isScheduling
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : Text(
                         'Schedule Session',
                         style: GoogleFonts.inter(
                           fontSize: 18,

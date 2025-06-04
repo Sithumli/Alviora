@@ -1,13 +1,17 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class GrannyScheduleQuickBreathingPage extends StatefulWidget {
   const GrannyScheduleQuickBreathingPage({Key? key}) : super(key: key);
 
   @override
-  State<GrannyScheduleQuickBreathingPage> createState() => _GrannyScheduleQuickBreathingPageState();
+  State<GrannyScheduleQuickBreathingPage> createState() =>
+      _GrannyScheduleQuickBreathingPageState();
 }
 
-class _GrannyScheduleQuickBreathingPageState extends State<GrannyScheduleQuickBreathingPage> {
+class _GrannyScheduleQuickBreathingPageState
+    extends State<GrannyScheduleQuickBreathingPage> {
   DateTime? _selectedDate;
   TimeOfDay? _selectedTime;
   String _recurrence = 'None';
@@ -48,7 +52,7 @@ class _GrannyScheduleQuickBreathingPageState extends State<GrannyScheduleQuickBr
     }
   }
 
-  void _saveSchedule() {
+  Future<void> _saveSchedule() async {
     if (_selectedDate == null || _selectedTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select both date and time')),
@@ -64,24 +68,53 @@ class _GrannyScheduleQuickBreathingPageState extends State<GrannyScheduleQuickBr
       _selectedTime!.minute,
     );
 
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Schedule Saved'),
-        content: Text(
-          'Quick breathing session scheduled for\n${scheduledDateTime.toLocal()} \nDuration: $_durationMinutes minutes\nRecurrence: $_recurrence',
+    if (scheduledDateTime.isBefore(DateTime.now())) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Scheduled time must be in the future')),
+      );
+      return;
+    }
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User not logged in')),
+        );
+        return;
+      }
+
+      await FirebaseFirestore.instance.collection('quick_breathing_schedules').add({
+        'userId': user.uid,
+        'scheduledDateTime': scheduledDateTime.toUtc(),
+        'recurrence': _recurrence,
+        'durationMinutes': _durationMinutes,
+        'createdAt': Timestamp.now(),
+      });
+
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Schedule Saved'),
+          content: Text(
+            'Quick breathing session scheduled for\n${scheduledDateTime.toLocal()}\nDuration: $_durationMinutes minutes\nRecurrence: $_recurrence',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // close dialog
+                Navigator.pop(context); // go back from page
+              },
+              child: const Text('OK'),
+            )
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text('OK'),
-          )
-        ],
-      ),
-    );
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save schedule: $e')),
+      );
+    }
   }
 
   @override
@@ -134,7 +167,8 @@ class _GrannyScheduleQuickBreathingPageState extends State<GrannyScheduleQuickBr
                     backgroundColor: Colors.white.withOpacity(0.9),
                     minimumSize: const Size(double.infinity, 50),
                     side: BorderSide(color: primaryBlue),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                   child: Text(
                     _selectedDate == null
@@ -143,7 +177,6 @@ class _GrannyScheduleQuickBreathingPageState extends State<GrannyScheduleQuickBr
                     style: TextStyle(fontSize: 18, color: primaryBlue),
                   ),
                 ),
-
                 const SizedBox(height: 20),
                 Text('Select Time:', style: labelStyle),
                 const SizedBox(height: 8),
@@ -153,7 +186,8 @@ class _GrannyScheduleQuickBreathingPageState extends State<GrannyScheduleQuickBr
                     backgroundColor: Colors.white.withOpacity(0.9),
                     minimumSize: const Size(double.infinity, 50),
                     side: BorderSide(color: primaryBlue),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                   child: Text(
                     _selectedTime == null
@@ -162,7 +196,6 @@ class _GrannyScheduleQuickBreathingPageState extends State<GrannyScheduleQuickBr
                     style: TextStyle(fontSize: 18, color: primaryBlue),
                   ),
                 ),
-
                 const SizedBox(height: 20),
                 Text('Recurrence:', style: labelStyle),
                 const SizedBox(height: 8),
@@ -184,10 +217,10 @@ class _GrannyScheduleQuickBreathingPageState extends State<GrannyScheduleQuickBr
                   decoration: InputDecoration(
                     filled: true,
                     fillColor: Colors.white.withOpacity(0.9),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                 ),
-
                 const SizedBox(height: 20),
                 Text('Duration (minutes):', style: labelStyle),
                 const SizedBox(height: 8),
@@ -198,9 +231,11 @@ class _GrannyScheduleQuickBreathingPageState extends State<GrannyScheduleQuickBr
                     return ElevatedButton(
                       onPressed: () => setState(() => _durationMinutes = min),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: selected ? primaryBlue : Colors.white.withOpacity(0.7),
+                        backgroundColor:
+                        selected ? primaryBlue : Colors.white.withOpacity(0.7),
                         minimumSize: const Size(80, 50),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
                         side: BorderSide(color: primaryBlue),
                       ),
                       child: Text(
@@ -214,20 +249,20 @@ class _GrannyScheduleQuickBreathingPageState extends State<GrannyScheduleQuickBr
                     );
                   }).toList(),
                 ),
-
                 const Spacer(),
-
                 Center(
                   child: ElevatedButton(
                     onPressed: _saveSchedule,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: primaryBlue,
                       minimumSize: const Size(double.infinity, 55),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30)),
                     ),
                     child: const Text(
                       'Save Schedule',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                      style:
+                      TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
                     ),
                   ),
                 ),

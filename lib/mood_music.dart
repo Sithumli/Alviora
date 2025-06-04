@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:just_audio/just_audio.dart'; // Add this dependency in pubspec.yaml
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,18 +36,39 @@ class _CalmingPlaylistPageState extends State<CalmingPlaylistPage> {
   String _selectedTitle = 'The Hills';
   String _selectedArtist = 'Weeknd';
   String _selectedImage =
-      'https://i.scdn.co/image/ab67616d0000b273c9cdbbeed872e1ca7e9b179a';
+      'https://cdn-images.dzcdn.net/images/cover/eea9f7fc913300e40307a0ff70dc73cf/250x250-000000-80-0-0.jpg';
+  String _selectedAudioUrl = '';
 
   final database = FirebaseDatabase.instanceFor(
     app: Firebase.app(),
     databaseURL: 'https://alviora-10650-default-rtdb.firebaseio.com/',
   );
   late final DatabaseReference _dbRef;
+  late final AudioPlayer _audioPlayer;
 
   @override
   void initState() {
     super.initState();
     _dbRef = database.ref('selected_song');
+    _audioPlayer = AudioPlayer();
+
+    // Listen to changes in Firebase to get selected song and play
+    _dbRef.onValue.listen((event) {
+      final data = event.snapshot.value as Map<dynamic, dynamic>?;
+
+      if (data != null) {
+        setState(() {
+          _selectedTitle = data['title'] ?? '';
+          _selectedArtist = data['artist'] ?? '';
+          _selectedImage = data['image'] ?? '';
+          _selectedAudioUrl = data['audio_url'] ?? '';
+        });
+
+        if (_selectedAudioUrl.isNotEmpty) {
+          _playAudio(_selectedAudioUrl);
+        }
+      }
+    });
   }
 
   Future<void> searchSongs(String query) async {
@@ -59,9 +81,10 @@ class _CalmingPlaylistPageState extends State<CalmingPlaylistPage> {
 
       final results = tracks.map<Map<String, String>>((track) {
         return {
-          'title': track['title'],
-          'artist': track['artist']['name'],
+          'title': track['title'] ?? '',
+          'artist': track['artist']['name'] ?? '',
           'image': track['album']['cover_medium'] ?? '',
+          'audio_url': track['preview'] ?? '', // Deezer preview URL for audio
         };
       }).toList();
 
@@ -101,6 +124,7 @@ class _CalmingPlaylistPageState extends State<CalmingPlaylistPage> {
       _selectedTitle = song['title']!;
       _selectedArtist = song['artist']!;
       _selectedImage = song['image']!;
+      _selectedAudioUrl = song['audio_url']!;
     });
 
     try {
@@ -108,12 +132,29 @@ class _CalmingPlaylistPageState extends State<CalmingPlaylistPage> {
         'title': _selectedTitle,
         'artist': _selectedArtist,
         'image': _selectedImage,
+        'audio_url': _selectedAudioUrl,
         'timestamp': ServerValue.timestamp,
       });
       print('Song info sent to Firebase');
     } catch (e) {
       print('Error sending song info to Firebase: $e');
     }
+  }
+
+  Future<void> _playAudio(String url) async {
+    try {
+      await _audioPlayer.setUrl(url);
+      _audioPlayer.play();
+      print('Playing audio from $url');
+    } catch (e) {
+      print('Audio playback error: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
   }
 
   @override
@@ -179,31 +220,7 @@ class _CalmingPlaylistPageState extends State<CalmingPlaylistPage> {
                   _selectedArtist,
                   style: const TextStyle(color: Colors.grey),
                 ),
-                const SizedBox(height: 6),
-                Container(
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Text('Calm'),
-                ),
               ],
-            ),
-
-            const SizedBox(height: 20),
-
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Container(
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Center(child: Text('Waveform Placeholder')),
-              ),
             ),
 
             const SizedBox(height: 20),
@@ -234,14 +251,17 @@ class _CalmingPlaylistPageState extends State<CalmingPlaylistPage> {
                           'artist': 'weeknd',
                           'image':
                           'https://cdns-images.dzcdn.net/images/cover/43ec7bb80e6a7d27d1e9a332b72af34f/250x250-000000-80-0-0.jpg',
+                          'audio_url': '', // no audio url here
                         });
                       }),
                 ]
                     : _songs.map((song) {
-                  return buildSongTile(song['title']!, song['artist']!,
+                  return buildSongTile(
+                      song['title']!,
+                      song['artist']!,
                       song['image']!, onTap: () {
-                        _selectSong(song);
-                      });
+                    _selectSong(song);
+                  });
                 }).toList(),
               ),
             ),

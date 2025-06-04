@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';  // Firebase Firestore import
 
 class GrannyScheduleBreathingPage extends StatefulWidget {
   const GrannyScheduleBreathingPage({Key? key}) : super(key: key);
@@ -15,6 +16,8 @@ class _GrannyScheduleBreathingPageState extends State<GrannyScheduleBreathingPag
   int _durationMinutes = 5;
 
   final List<String> recurrenceOptions = ['None', 'Daily', 'Weekly'];
+
+  bool _isSaving = false;  // Loading indicator flag
 
   Future<void> _pickDate() async {
     DateTime initialDate = DateTime.now().add(const Duration(minutes: 1));
@@ -50,13 +53,17 @@ class _GrannyScheduleBreathingPageState extends State<GrannyScheduleBreathingPag
     }
   }
 
-  void _saveSchedule() {
+  Future<void> _saveSchedule() async {
     if (_selectedDate == null || _selectedTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please select both date and time')),
       );
       return;
     }
+
+    setState(() {
+      _isSaving = true;
+    });
 
     final scheduledDateTime = DateTime(
       _selectedDate!.year,
@@ -66,24 +73,47 @@ class _GrannyScheduleBreathingPageState extends State<GrannyScheduleBreathingPag
       _selectedTime!.minute,
     );
 
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Schedule Saved'),
-        content: Text(
-          'Deep breathing session scheduled for\n${scheduledDateTime.toLocal()} \nDuration: $_durationMinutes minutes\nRecurrence: $_recurrence',
+    try {
+      // Save to Firestore collection 'breathing_schedules'
+      await FirebaseFirestore.instance.collection('deep_breathing_schedules').add({
+        'scheduledDateTime': scheduledDateTime.toUtc(),
+        'recurrence': _recurrence,
+        'durationMinutes': _durationMinutes,
+        'createdAt': DateTime.now().toUtc(),
+      });
+
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: const Text('Schedule Saved'),
+          content: Text(
+            'Deep breathing session scheduled for\n${scheduledDateTime.toLocal()} \nDuration: $_durationMinutes minutes\nRecurrence: $_recurrence',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+                Navigator.pop(context); // Go back to previous screen
+              },
+              child: const Text('OK'),
+            )
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
-            child: const Text('OK'),
-          )
-        ],
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save schedule: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
   }
 
   @override
@@ -194,14 +224,16 @@ class _GrannyScheduleBreathingPageState extends State<GrannyScheduleBreathingPag
                     width: double.infinity,
                     height: 55,
                     child: ElevatedButton(
-                      onPressed: _saveSchedule,
+                      onPressed: _isSaving ? null : _saveSchedule,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
+                        backgroundColor: _isSaving ? Colors.grey : Colors.blueAccent,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
                       ),
-                      child: Text(
+                      child: _isSaving
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : Text(
                         "Save Schedule",
                         style: GoogleFonts.inter(
                           fontSize: 20,

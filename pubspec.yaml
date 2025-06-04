@@ -30,6 +30,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  just_audio: ^0.9.30
   url_launcher: ^6.1.12
   intl: ^0.18.1
   webview_flutter: ^4.2.2

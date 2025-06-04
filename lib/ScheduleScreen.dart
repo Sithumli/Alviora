@@ -13,7 +13,6 @@ class ScheduleScreen extends StatefulWidget {
 
 class _ScheduleScreenState extends State<ScheduleScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
   DateTime selectedDate = DateTime.now();
   List<Map<String, dynamic>> _schedules = [];
 
@@ -25,25 +24,35 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
   Future<void> _loadSchedulesForDate(DateTime date) async {
     final dateStr = _formatDate(date);
+    print("Loading schedules for date: $dateStr"); // Debug print
 
-    final snapshot = await _firestore
-        .collection('schedules')
-        .where('date', isEqualTo: dateStr)
-        .orderBy('time')
-        .get();
+    try {
+      final snapshot = await _firestore
+          .collection('schedules')
+          .where('date', isEqualTo: dateStr)
+          .orderBy('time')
+          .get();
 
-    setState(() {
-      _schedules = snapshot.docs.map((doc) {
-        final data = doc.data();
-        return {
-          'date': data['date'],
-          'time': data['time'],
-          'hasEvent': true,
-          'description': data['description'],
-          'docId': doc.id,
-        };
-      }).toList();
-    });
+      print("Found ${snapshot.docs.length} schedules"); // Debug print
+
+      setState(() {
+        _schedules = snapshot.docs.map((doc) {
+          final data = doc.data();
+          print("Schedule data: $data"); // Debug print
+          return {
+            'date': data['date'],
+            'time': data['time'],
+            'from': data['from'],
+            'to': data['to'],
+            'hasEvent': true,
+            'description': data['description'] ?? 'No description',
+            'docId': doc.id,
+          };
+        }).toList();
+      });
+    } catch (e) {
+      print("Error loading schedules: $e"); // Debug print
+    }
   }
 
   String _formatDate(DateTime dt) => DateFormat('yyyy-MM-dd').format(dt);
@@ -78,16 +87,14 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
           const Expanded(
             child: Text(
               "Your Tasks are almost accomplished!",
-              style:
-              TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
             ),
           ),
           Column(
             children: const [
               Icon(Icons.speed, color: Colors.white, size: 30),
               Text("72%",
-                  style:
-                  TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ],
           ),
         ],
@@ -163,41 +170,72 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     return labels[weekday - 1];
   }
 
-  Widget _buildTimeBlock(String time,
-      {bool hasEvent = false, required String description}) {
+  Widget _buildTimeBlock({
+    required bool hasEvent,
+    required String description,
+    required String from,
+    required String to,
+  }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 50, child: Text(time)),
+          SizedBox(
+            width: 60,
+            child: Text(
+              from,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+          ),
           const SizedBox(width: 10),
-          if (hasEvent)
-            Expanded(
-              child: Container(
-                height: 50,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF6FB7FF),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(description,
-                        style: const TextStyle(color: Colors.white)),
-                    const Row(
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF6FB7FF),
+                borderRadius: BorderRadius.circular(15),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CircleAvatar(radius: 10, backgroundColor: Colors.red),
-                        SizedBox(width: 5),
-                        CircleAvatar(radius: 10, backgroundColor: Colors.grey),
+                        Text(
+                          description,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '$from - $to',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                          ),
+                        ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  const Row(
+                    children: [
+                      CircleAvatar(radius: 10, backgroundColor: Colors.red),
+                      SizedBox(width: 5),
+                      CircleAvatar(radius: 10, backgroundColor: Colors.grey),
+                    ],
+                  ),
+                ],
               ),
-            )
+            ),
+          ),
         ],
       ),
     );
@@ -242,8 +280,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF3F86F4),
-          shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         onPressed: () async {
           final result = await Navigator.push(
@@ -253,10 +290,13 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
 
           if (result != null && result is Map<String, dynamic>) {
             await _firestore.collection('schedules').add({
-              'date': result['date'], // yyyy-MM-dd string
-              'time': result['from'], // time string
-              'description': result['description'] ?? result['note'] ?? '',
+              'date': result['date'],
+              'time': result['time'],
+              'from': result['from'],
+              'to': result['to'],
+              'description': result['description'],
               'createdAt': FieldValue.serverTimestamp(),
+              'hasEvent': true,
             });
 
             _loadSchedulesForDate(selectedDate);
@@ -284,17 +324,31 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               const SizedBox(height: 20),
               _buildDateSelector(),
               const SizedBox(height: 10),
-              const Text("Schedule Today",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+              const Text(
+                "Schedule Today",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
               const SizedBox(height: 10),
-              if (_schedules.isEmpty)
-                const Text('No schedules for today'),
-              for (var sched in _schedules)
-                _buildTimeBlock(
-                  sched['time'],
-                  hasEvent: sched['hasEvent'],
-                  description: sched['description'],
+              Expanded(
+                child: _schedules.isEmpty
+                    ? const Center(
+                  child: Text(
+                    'No schedules for today',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                )
+                    : ListView(
+                  children: [
+                    for (var sched in _schedules)
+                      _buildTimeBlock(
+                        hasEvent: sched['hasEvent'] ?? false,
+                        description: sched['description'] ?? 'No description',
+                        from: sched['from'] ?? '--:--',
+                        to: sched['to'] ?? '--:--',
+                      ),
+                  ],
                 ),
+              ),
               const SizedBox(height: 20),
               _buildReminderCard(),
               const SizedBox(height: 10),

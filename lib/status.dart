@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart'; // Adjust the path as necessary
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'home_screen.dart';
+import 'medication_schedule.dart';
 
 class StatusScreen extends StatelessWidget {
   const StatusScreen({Key? key}) : super(key: key);
@@ -32,7 +34,7 @@ class StatusScreen extends StatelessWidget {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // TOP ROW
+              // Health metrics cards (unchanged)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -41,7 +43,6 @@ class StatusScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -50,54 +51,116 @@ class StatusScreen extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-
               _buildExerciseCard(),
-
               const SizedBox(height: 20),
 
-              // Recent Health Alerts
+              // Health Alerts
               _buildSectionTitle("Recent Health Alerts"),
               const SizedBox(height: 10),
               _buildAlertTile("Slight coughing detected", "Yesterday, 10:30 PM"),
               _buildAlertTile("Lower activity than usual", "2 days ago"),
-
               const SizedBox(height: 20),
 
               // Medication Tracker
-              _buildSectionTitle("Medication Tracker"),
+              _buildSectionTitle(
+                "Medication Tracker",
+                onAdd: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const MedicationTrackerPage()),
+                  );
+                },
+              ),
               const SizedBox(height: 10),
-              _buildMedicationTile("Blood Pressure Medicine", "8:00 AM - Taken", true),
-              _buildMedicationTile("Vitamin Supplement", "1:00 PM - Upcoming", false),
-              _buildMedicationTile("Cholesterol Medicine", "9:00 PM - Upcoming", false),
+
+              // Firestore medication list (read-only with delete button)
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('medications')
+                    .orderBy('datetime')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Text('Error: ${snapshot.error}');
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Text("No medications found.");
+                  }
+
+                  return Column(
+                    children: snapshot.data!.docs.map((doc) {
+                      final data = doc.data() as Map<String, dynamic>?;
+                      if (data == null) return const SizedBox();
+
+                      try {
+                        final String name = data['title'] ?? 'Unnamed Medicine';
+                        final DateTime dateTime = DateTime.parse(data['datetime']);
+                        final String time = TimeOfDay.fromDateTime(dateTime).format(context);
+                        final bool taken = data['status'] == 'Taken';
+
+                        return _buildMedicationTile(
+                          name,
+                          time,
+                          taken,
+                          onDelete: () async {
+                            // Delete medication doc from Firestore
+                            try {
+                              await FirebaseFirestore.instance
+                                  .collection('medications')
+                                  .doc(doc.id)
+                                  .delete();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Medication deleted')),
+                              );
+                            } catch (e) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Delete failed: $e')),
+                              );
+                            }
+                          },
+                        );
+                      } catch (e) {
+                        return const SizedBox();
+                      }
+                    }).toList(),
+                  );
+                },
+              ),
 
               const SizedBox(height: 20),
-
-              Container(
-                width: double.infinity,
-                height: 45,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(12),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF6785F2), Color(0xFFADC8FF)],
-                  ),
-                ),
-                child: ElevatedButton(
-                  onPressed: () {},
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    shadowColor: Colors.transparent,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    "More Health Alerts",
-                    style: TextStyle(fontSize: 16, color: Colors.white),
-                  ),
-                ),
-              ),
+              _buildMoreAlertsButton(),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMoreAlertsButton() {
+    return Container(
+      width: double.infinity,
+      height: 45,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF6785F2), Color(0xFFADC8FF)],
+        ),
+      ),
+      child: ElevatedButton(
+        onPressed: () {},
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: const Text(
+          "More Health Alerts",
+          style: TextStyle(fontSize: 16, color: Colors.white),
         ),
       ),
     );
@@ -120,8 +183,7 @@ class StatusScreen extends StatelessWidget {
               children: [
                 Icon(icon, color: Colors.blue),
                 const Spacer(),
-                if (hasAdd)
-                  const Icon(Icons.add, size: 18, color: Colors.blue),
+                if (hasAdd) const Icon(Icons.add, size: 18, color: Colors.blue),
               ],
             ),
             const SizedBox(height: 8),
@@ -191,13 +253,20 @@ class StatusScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Text(
-        title,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-      ),
+  Widget _buildSectionTitle(String title, {VoidCallback? onAdd}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        if (onAdd != null)
+          IconButton(
+            icon: const Icon(Icons.add, color: Colors.blue),
+            onPressed: onAdd,
+          ),
+      ],
     );
   }
 
@@ -230,7 +299,7 @@ class StatusScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMedicationTile(String name, String time, bool taken) {
+  Widget _buildMedicationTile(String name, String time, bool taken, {required VoidCallback onDelete}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -242,6 +311,14 @@ class StatusScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // Delete button
+          IconButton(
+            icon: const Icon(Icons.delete_outline, color: Colors.red),
+            onPressed: onDelete,
+          ),
+
+          const SizedBox(width: 8),
+
           const Icon(Icons.medical_services, color: Colors.blue),
           const SizedBox(width: 12),
           Column(

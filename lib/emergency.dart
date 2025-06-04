@@ -5,31 +5,24 @@ class EmergencyPage extends StatelessWidget {
   const EmergencyPage({super.key});
 
   final List<Map<String, String>> hotlines = const [
-    {
-      'service': 'Police Emergency',
-      'number': '119',
-    },
-    {
-      'service': 'Ambulance / Fire & Rescue',
-      'number': '110',
-    },
-    {
-      'service': 'Disaster Management Centre',
-      'number': '117',
-    },
-    {
-      'service': 'Women Help Line',
-      'number': '1938',
-    },
-    {
-      'service': 'Child Help Line',
-      'number': '1929',
-    },
-    {
-      'service': 'Mental Health Support (CCCline)',
-      'number': '1333',
-    },
+    {'service': 'Police Emergency', 'number': '119'},
+    {'service': 'Ambulance / Fire & Rescue', 'number': '110'},
+    {'service': 'Disaster Management Centre', 'number': '117'},
+    {'service': 'Women Help Line', 'number': '1938'},
+    {'service': 'Child Help Line', 'number': '1929'},
+    {'service': 'Mental Health Support (CCCline)', 'number': '1333'},
   ];
+
+  Future<void> _launchDialer(BuildContext context, String number) async {
+    final Uri phoneUri = Uri(scheme: 'tel', path: number);
+    if (await canLaunchUrl(phoneUri)) {
+      await launchUrl(phoneUri);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cannot launch dialer')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,16 +78,7 @@ class EmergencyPage extends StatelessWidget {
               ),
               trailing: IconButton(
                 icon: const Icon(Icons.phone_forwarded_rounded, color: Colors.blueAccent),
-                onPressed: () async {
-                  final Uri phoneUri = Uri(scheme: 'tel', path: hotline['number']);
-                  if (await canLaunchUrl(phoneUri)) {
-                    await launchUrl(phoneUri);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Cannot launch dialer')),
-                    );
-                  }
-                },
+                onPressed: () => _launchDialer(context, hotline['number']!),
               ),
             ),
           );

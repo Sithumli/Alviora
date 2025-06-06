@@ -5,7 +5,7 @@ import firebase_admin
 from firebase_admin import credentials, db
 
 # Initialize Firebase
-cred = credentials.Certificate("path/to/serviceAccountKey.json")  # Replace with your file path
+cred = credentials.Certificate("serviceAccountKey.json")  # Replace with your file path
 firebase_admin.initialize_app(cred, {
     'databaseURL': 'https://alviora-10650-default-rtdb.firebaseio.com'  # Replace with your actual database URL
 })
@@ -15,7 +15,7 @@ fall_ref = db.reference("fall_alerts")
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose()
 
-video_path = "3.mp4"
+video_path = "fall_test/2.mp4"
 cap = cv2.VideoCapture(video_path)
 
 prev_nose_y = None
@@ -49,7 +49,6 @@ while cap.isOpened():
                         "frame": frame_number,
                         "time": timestamp,
                         "detected": True,
-                        "source": "video",
                         "timestamp_unix": int(time.time())
                     })
             else:

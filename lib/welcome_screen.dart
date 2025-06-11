@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:alviora_app/sign_in_screen.dart';
+import './sign_in_screen.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});

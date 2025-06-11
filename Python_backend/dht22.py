@@ -3,11 +3,9 @@ import firebase_admin
 from firebase_admin import credentials, db
 import time
 
-# Use existing Firebase app instead of initializing new one
 try:
     firebase_app = firebase_admin.get_app()
 except ValueError:
-    # If no app exists, initialize one
     cred = credentials.Certificate("serviceAccountKey.json")
     firebase_app = firebase_admin.initialize_app(cred, {
         'databaseURL': 'https://alviora-10650-default-rtdb.firebaseio.com'
@@ -17,15 +15,13 @@ dht_ref = db.reference("dht22_sensor")
 alert_ref = db.reference("alerts")
 
 last_alert_time = 0
-ALERT_COOLDOWN = 300  # 5 minutes between alerts
+ALERT_COOLDOWN = 300
 
 def push_mock_dht22_data():
     global last_alert_time
-    # Hardcoded mock values
-    temperature = 36.5  # Celsius, above threshold for emergency
-    humidity = 18.0     # Percent, below threshold for emergency
+    temperature = 36.5
+    humidity = 18.0
 
-    # Emergency thresholds
     temp_threshold_high = 35
     temp_threshold_low = 20
     humidity_threshold_low = 20
@@ -45,7 +41,6 @@ def push_mock_dht22_data():
     dht_ref.push(data)
     print("Pushed mock DHT22 data:", data)
 
-    # Send alert if emergency and cooldown period has passed
     if emergency and (time.time() - last_alert_time) >= ALERT_COOLDOWN:
         last_alert_time = time.time()
         alert_data = {
@@ -67,7 +62,10 @@ def push_mock_dht22_data():
                 "dismiss": True,
                 "view_360": True
             },
-            "emergency_number": "1990"
+            "emergency_number": "1990",
+            "title": "Environmental Alert",
+            "message": f"Unsafe conditions! Temp: {temperature}°C, Humidity: {humidity}%",
+            "sound": "alert_sound.mp3"
         }
         alert_ref.push(alert_data)
         print("🚨 EMERGENCY: Environmental conditions outside safe range!")
@@ -75,7 +73,7 @@ def push_mock_dht22_data():
 def run_dht22():
     while True:
         push_mock_dht22_data()
-        time.sleep(5)  # Push data every 5 seconds
+        time.sleep(5)
 
 if __name__ == "__main__":
     run_dht22()

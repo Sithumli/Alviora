@@ -311,10 +311,32 @@ class StreamManager:
                 "type": alert_type,
                 "timestamp": datetime.now().isoformat(),
                 "details": details,
-                "status": "active"
+                "status": "active",
+                "severity": "high",
+                "action_required": True,
+                "actions": {
+                    "call_emergency": True,
+                    "dismiss": True,
+                    "view_360": True
+                },
+                "emergency_number": "1990",
+                "sound": "alert_sound.mp3"
             }
+
+            if alert_type == "cough":
+                alert_data.update({
+                    "title": "Excessive Coughing Detected",
+                    "message": f"Patient has coughed {details['count']} times in {details['window_minutes']:.1f} minutes"
+                })
+            elif alert_type == "fall":
+                alert_data.update({
+                    "title": "Fall Detected",
+                    "message": f"Fall detected with confidence {details['confidence']:.2f}"
+                })
+
             self.alert_ref.push(alert_data)
             logger.warning(f"Emergency alert sent: {alert_type}")
+
         except Exception as e:
             logger.error(f"Failed to send alert: {str(e)}")
     

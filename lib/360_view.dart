@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'dart:math';
+import 'dart:async';
 
 void main() {
   runApp(const MyApp());
@@ -22,7 +24,12 @@ class MyApp extends StatelessWidget {
 class LiveViewScreen extends StatelessWidget {
   const LiveViewScreen({super.key});
 
-  final String streamUrl = 'http://192.168.1.5:8080/stream';
+  // Get the local IP address from environment or use localhost
+  String get streamUrl {
+    // For physical devices, use the actual local IP address
+    const String serverIp = '192.168.1.32'; // Your computer's local IP address
+    return 'http://192.168.1.32:8080';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +57,7 @@ class LiveViewScreen extends StatelessWidget {
           children: [
             const Text("Live View", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            const Text("Viewing: Bed Room", style: TextStyle(color: Colors.grey)),
+            Text("Viewing: Bed Room (${streamUrl})", style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 16),
 
             // Live Stream Container
@@ -61,7 +68,7 @@ class LiveViewScreen extends StatelessWidget {
                 border: Border.all(color: Colors.blueAccent, width: 2),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: LiveStreamView(streamUrl: streamUrl),
+              child: WebRTCView(streamUrl: streamUrl),
             ),
 
             const SizedBox(height: 20),
@@ -111,73 +118,164 @@ class LiveViewScreen extends StatelessWidget {
   }
 }
 
-class LiveStreamView extends StatefulWidget {
+class WebRTCView extends StatefulWidget {
   final String streamUrl;
 
-  const LiveStreamView({super.key, required this.streamUrl});
+  const WebRTCView({super.key, required this.streamUrl});
 
   @override
-  State<LiveStreamView> createState() => _LiveStreamViewState();
+  State<WebRTCView> createState() => _WebRTCViewState();
 }
 
-class _LiveStreamViewState extends State<LiveStreamView> {
-  bool _streamAvailable = false;
+class _WebRTCViewState extends State<WebRTCView> {
   bool _loading = true;
+  String _errorMessage = '';
   late final WebViewController _controller;
+  Timer? _retryTimer;
 
   @override
   void initState() {
     super.initState();
-    _controller = WebViewController()
-      ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..loadRequest(Uri.parse(widget.streamUrl));
-    _checkStreamAvailability();
+    _initializeWebView();
   }
 
-  Future<void> _checkStreamAvailability() async {
-    setState(() => _loading = true);
-    try {
-      final response = await http.get(Uri.parse(widget.streamUrl)).timeout(const Duration(seconds: 3));
-      setState(() {
-        _streamAvailable = response.statusCode == 200;
-        _loading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _streamAvailable = false;
-        _loading = false;
-      });
-    }
+  @override
+  void dispose() {
+    _retryTimer?.cancel();
+    super.dispose();
+  }
+
+  void _initializeWebView() {
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(Colors.black)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageStarted: (String url) {
+            print('Page started loading: $url');
+            setState(() {
+              _loading = true;
+              _errorMessage = '';
+            });
+          },
+          onPageFinished: (String url) {
+            print('Page finished loading: $url');
+            setState(() {
+              _loading = false;
+            });
+          },
+          onWebResourceError: (WebResourceError error) {
+            print('Web resource error: ${error.description}');
+            setState(() {
+              _loading = false;
+              _errorMessage = 'Error: ${error.description}';
+            });
+            
+            // Auto retry after 5 seconds
+            _retryTimer?.cancel();
+            _retryTimer = Timer(const Duration(seconds: 5), () {
+              if (mounted) {
+                setState(() {
+                  _loading = true;
+                  _errorMessage = '';
+                });
+                _initializeWebView();
+              }
+            });
+          },
+        ),
+      )
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onNavigationRequest: (NavigationRequest request) {
+            // Allow all navigation requests
+            return NavigationDecision.navigate;
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(widget.streamUrl));
   }
 
   @override
   Widget build(BuildContext context) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Connecting to stream...', style: TextStyle(color: Colors.grey)),
+          ],
+        ),
+      );
     }
 
-    if (!_streamAvailable) {
+    if (_errorMessage.isNotEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Icon(Icons.error_outline, size: 60, color: Colors.red),
             const SizedBox(height: 16),
-            const Text('Stream not available', style: TextStyle(fontSize: 18)),
+            const Text(
+              'Stream not available',
+              style: TextStyle(fontSize: 18),
+            ),
             const SizedBox(height: 8),
+            Text(
+              _errorMessage,
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
             ElevatedButton.icon(
-              onPressed: _checkStreamAvailability,
+              onPressed: () {
+                setState(() {
+                  _loading = true;
+                  _errorMessage = '';
+                });
+                _initializeWebView();
+              },
               icon: const Icon(Icons.refresh),
-              label: const Text("Retry"),
+              label: const Text("Retry Now"),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Auto-retrying in 5 seconds...',
+              style: TextStyle(color: Colors.grey, fontSize: 12),
             ),
           ],
         ),
       );
     }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: WebViewWidget(controller: _controller),
+    return Stack(
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: WebViewWidget(controller: _controller),
+        ),
+        Positioned(
+          top: 8,
+          right: 8,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.circle, color: Colors.white, size: 8),
+                SizedBox(width: 4),
+                Text('Live', style: TextStyle(color: Colors.white, fontSize: 12)),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

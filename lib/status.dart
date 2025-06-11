@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'home_screen.dart';
 import 'medication_schedule.dart';
+import 'package:firebase_database/firebase_database.dart';
+
 
 class StatusScreen extends StatelessWidget {
   const StatusScreen({Key? key}) : super(key: key);
@@ -46,7 +48,7 @@ class StatusScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildTopCard(Icons.thermostat, "Temperature", "37.1℃", false),
+                  _buildLiveTemperatureCard(),
                   _buildSleepCard(),
                 ],
               ),
@@ -330,6 +332,48 @@ class StatusScreen extends StatelessWidget {
             ],
           )
         ],
+      ),
+    );
+  }
+  Widget _buildLiveTemperatureCard() {
+    final dhtRef = FirebaseDatabase.instance.ref().child('dht22_sensor');
+
+    return Expanded(
+      child: StreamBuilder<DatabaseEvent>(
+        stream: dhtRef.orderByKey().limitToLast(1).onValue,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return _loadingCard();
+          }
+          if (snapshot.hasError || !snapshot.hasData) {
+            return _buildTopCard(Icons.thermostat, "Temperature", "N/A", false);
+          }
+
+          final dataMap = snapshot.data!.snapshot.value as Map?;
+          if (dataMap == null || dataMap.isEmpty) {
+            return _buildTopCard(Icons.thermostat, "Temperature", "N/A", false);
+          }
+
+          final latest = dataMap.values.last;
+          final temperature = latest['temperature_c']?.toStringAsFixed(1) ?? 'N/A';
+
+          return _buildTopCard(Icons.thermostat, "Temperature", "$temperature℃", false);
+        },
+      ),
+    );
+  }
+
+  Widget _loadingCard() {
+    return Expanded(
+      child: Container(
+        height: 100,
+        margin: const EdgeInsets.symmetric(horizontal: 6),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: const Center(child: CircularProgressIndicator()),
       ),
     );
   }

@@ -37,14 +37,12 @@ dependencies:
   http: ^1.4.0
   # Firebase Core (required for any Firebase features)
   firebase_core: ^3.13.0
-
   # Firebase Authentication (for email login/signup)
   firebase_auth: ^5.5.3
 
   image_picker: ^1.0.0
 
   firebase_storage: ^12.4.6
-
   # Cloud Firestore (to store user data, mood, health etc.)
   cloud_firestore: ^5.6.7
 

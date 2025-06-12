@@ -1,0 +1,2 @@
+C:/flutter projects/alviora_app/android/app/.cxx/Debug/z5t3o5t4/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/flutter projects/alviora_app/android/app/.cxx/Debug/z5t3o5t4/armeabi-v7a/CMakeFiles/rebuild_cache.dir

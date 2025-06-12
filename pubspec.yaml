@@ -31,23 +31,41 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Firebase Core (required for any Firebase features)
+  # Audio playback
+  just_audio: ^0.9.30
+  # Firebase core & services
   firebase_core: ^3.13.0
-
-  # Firebase Authentication (for email login/signup)
   firebase_auth: ^5.5.3
-
-  # Cloud Firestore (to store user data, mood, health etc.)
   cloud_firestore: ^5.6.7
+  firebase_storage: ^12.4.6
+
+  # UI & device features
+  url_launcher: ^6.1.12
+  intl: 0.20.2
+  webview_flutter: ^4.2.2
+  http: ^1.4.0
+  image_picker: ^1.0.0
+
+  # Firebase Cloud Messaging (optional, for background alerts)
+  firebase_messaging: ^15.0.2
+  awesome_notifications: ^0.10.1
+  # State management (optional but helpful)
+  provider: ^6.1.2
+
+
+  # For playing audio
+  audioplayers: ^5.2.1
 
   # Cupertino Icons for iOS
   cupertino_icons: ^1.0.8
+  firebase_database: ^11.3.6
 
+  file_picker: ^10.1.9
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
+  google_fonts: ^6.2.1
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
@@ -69,7 +87,23 @@ flutter:
   # To add assets to your application, add an assets section, like this:
 
   assets:
+    - assets/background_moodbooster.png
     - assets/robot.png
+    - assets/robot2.png
+    - assets/robot2.gif
+    - assets/fall.png
+    - assets/cough.png
+    - assets/the_hills.jpeg
+    - assets/song.jpeg
+    - assets/joy1.png
+    - assets/joy2.png
+    - assets/joy3.png
+    - assets/joy4.png
+    - assets/joy5.png
+    - assets/joy6.png
+    - assets/avatar.png
+    - assets/sounds/alert_sound.mp3
+    - assets/sounds/1.mp3
 
 
   fonts:

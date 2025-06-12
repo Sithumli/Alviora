@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'home_screen.dart';
 import 'medication_schedule.dart';
 import 'package:firebase_database/firebase_database.dart';
-
+import 'more_health_alerts.dart';
 
 class StatusScreen extends StatelessWidget {
   const StatusScreen({Key? key}) : super(key: key);
@@ -36,7 +36,6 @@ class StatusScreen extends StatelessWidget {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Health metrics cards (unchanged)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -56,14 +55,12 @@ class StatusScreen extends StatelessWidget {
               _buildExerciseCard(),
               const SizedBox(height: 20),
 
-              // Health Alerts
               _buildSectionTitle("Recent Health Alerts"),
               const SizedBox(height: 10),
               _buildAlertTile("Slight coughing detected", "Yesterday, 10:30 PM"),
               _buildAlertTile("Lower activity than usual", "2 days ago"),
               const SizedBox(height: 20),
 
-              // Medication Tracker
               _buildSectionTitle(
                 "Medication Tracker",
                 onAdd: () {
@@ -75,7 +72,6 @@ class StatusScreen extends StatelessWidget {
               ),
               const SizedBox(height: 10),
 
-              // Firestore medication list (read-only with delete button)
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('medications')
@@ -108,7 +104,6 @@ class StatusScreen extends StatelessWidget {
                           time,
                           taken,
                           onDelete: () async {
-                            // Delete medication doc from Firestore
                             try {
                               await FirebaseFirestore.instance
                                   .collection('medications')
@@ -133,7 +128,7 @@ class StatusScreen extends StatelessWidget {
               ),
 
               const SizedBox(height: 20),
-              _buildMoreAlertsButton(),
+              _buildMoreAlertsButton(context),
             ],
           ),
         ),
@@ -141,7 +136,7 @@ class StatusScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMoreAlertsButton() {
+  Widget _buildMoreAlertsButton(BuildContext context) {
     return Container(
       width: double.infinity,
       height: 45,
@@ -152,7 +147,12 @@ class StatusScreen extends StatelessWidget {
         ),
       ),
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const MoreHealthAlertsScreen()),
+          );
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
@@ -189,14 +189,8 @@ class StatusScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 12),
-            ),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
+            Text(title, style: const TextStyle(fontSize: 12)),
+            Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -313,14 +307,11 @@ class StatusScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Delete button
           IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.red),
             onPressed: onDelete,
           ),
-
           const SizedBox(width: 8),
-
           const Icon(Icons.medical_services, color: Colors.blue),
           const SizedBox(width: 12),
           Column(
@@ -335,6 +326,7 @@ class StatusScreen extends StatelessWidget {
       ),
     );
   }
+
   Widget _buildLiveTemperatureCard() {
     final dhtRef = FirebaseDatabase.instance.ref().child('dht22_sensor');
 

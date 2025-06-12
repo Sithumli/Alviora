@@ -33,7 +33,6 @@ dependencies:
 
   # Audio playback
   just_audio: ^0.9.30
-
   # Firebase core & services
   firebase_core: ^3.13.0
   firebase_auth: ^5.5.3
@@ -42,14 +41,14 @@ dependencies:
 
   # UI & device features
   url_launcher: ^6.1.12
-  intl: ^0.18.1
+  intl: 0.20.2
   webview_flutter: ^4.2.2
   http: ^1.4.0
   image_picker: ^1.0.0
 
   # Firebase Cloud Messaging (optional, for background alerts)
   firebase_messaging: ^15.0.2
-
+  awesome_notifications: ^0.10.1
   # State management (optional but helpful)
   provider: ^6.1.2
 
@@ -103,7 +102,8 @@ flutter:
     - assets/joy5.png
     - assets/joy6.png
     - assets/avatar.png
-    - assets/sounds/alert_sound.wav
+    - assets/sounds/alert_sound.mp3
+    - assets/sounds/1.mp3
 
 
   fonts:

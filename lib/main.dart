@@ -1,12 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:awesome_notifications/awesome_notifications.dart';
+
 import 'intro_screen.dart';
 import 'welcome_screen.dart';
 import 'sign_in_screen.dart';
+import 'global_navigator.dart';
+import 'alert_listener.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
+
+  AwesomeNotifications().initialize(
+    null,
+    [
+      NotificationChannel(
+        channelKey: 'alerts_channel',
+        channelName: 'Alerts',
+        channelDescription: 'Notifications for alerts',
+        importance: NotificationImportance.High,
+        defaultColor: Colors.red,
+        ledColor: Colors.white,
+        playSound: false,
+      ),
+    ],
+  );
+
   runApp(const MyApp());
 }
 
@@ -15,19 +35,22 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Alviora',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.white, // Base background
+    return AlertListener(
+      child: MaterialApp(
+        navigatorKey: navigatorKey,
+        debugShowCheckedModeBanner: false,
+        title: 'Alviora',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          scaffoldBackgroundColor: Colors.white,
+        ),
+        home: const IntroScreen(),
+        routes: {
+          '/welcome': (context) => const WelcomeScreen(),
+          '/signin': (context) => const SignInScreen(),
+          '/home': (context) => const AlvioraHomePage(),
+        },
       ),
-      home: const IntroScreen(),
-      routes: {
-        '/welcome': (context) => const WelcomeScreen(),
-        '/signin': (context) => const SignInScreen(),
-        '/home': (context) => const AlvioraHomePage(),
-      },
     );
   }
 }

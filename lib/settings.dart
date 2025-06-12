@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'home_screen.dart';
-
+import 'settings_account.dart';
+import 'settings_appearance.dart';
+import 'settings_notification.dart';
+import 'settings_password.dart';
 void main() {
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
@@ -87,10 +90,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: const TextStyle(fontSize: 14, color: Colors.grey),
             ),
             const SizedBox(height: 24),
-            const SettingsItem(icon: Icons.person, title: 'Account'),
-            const SettingsItem(icon: Icons.notifications, title: 'Notification'),
-            const SettingsItem(icon: Icons.remove_red_eye, title: 'Appearance'),
-            const SettingsItem(icon: Icons.password_rounded, title: 'Change password'),
+            SettingsItem(
+              icon: Icons.person,
+              title: 'Account',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AccountSettingsPage()),
+                );
+                },
+            ),
+            SettingsItem(
+              icon: Icons.notifications,
+              title: 'Notification',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const NotificationSettingsPage()),
+                );
+              },
+            ),
+            SettingsItem(
+              icon: Icons.remove_red_eye,
+              title: 'Appearance',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AppearanceSettingsPage()),
+                );
+              },
+            ),
+            SettingsItem(
+              icon: Icons.password_rounded,
+              title: 'Change password',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ChangePasswordPage()),
+                );
+              },
+            ),
+
             const SettingsItem(icon: Icons.language, title: 'Language'),
             const Spacer(),
             GestureDetector(
@@ -126,8 +166,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
 class SettingsItem extends StatelessWidget {
   final IconData icon;
   final String title;
+  final VoidCallback? onTap;
 
-  const SettingsItem({super.key, required this.icon, required this.title});
+  const SettingsItem({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -139,7 +185,8 @@ class SettingsItem extends StatelessWidget {
       ),
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       contentPadding: const EdgeInsets.symmetric(vertical: 2),
-      onTap: () {},
+      onTap: onTap,
     );
   }
 }
+

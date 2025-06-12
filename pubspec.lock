@@ -189,18 +189,18 @@ packages:
     dependency: transitive
     description:
       name: file
-      sha256: "1b92bec4fc2a72f59a8e15af5f52cd441e4a7860b49499d69dfa817af20e925d"
+      sha256: a3b4f84adafef897088c160faf7dfffb7696046cb13ae90b508c2cbc95d3b8d4
       url: "https://pub.dev"
     source: hosted
-    version: "6.1.4"
+    version: "7.0.1"
   file_picker:
     dependency: "direct main"
     description:
       name: file_picker
-      sha256: "77f8e81d22d2a07d0dee2c62e1dda71dc1da73bf43bb2d45af09727406167964"
+      sha256: ef9908739bdd9c476353d6adff72e88fd00c625f5b959ae23f7567bd5137db0a
       url: "https://pub.dev"
     source: hosted
-    version: "10.1.9"
+    version: "10.2.0"
   file_selector_linux:
     dependency: transitive
     description:
@@ -664,14 +664,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.8"
-  process:
-    dependency: transitive
-    description:
-      name: process
-      sha256: "53fd8db9cec1d37b0574e12f07520d582019cb6c44abf5479a01505099a34a09"
-      url: "https://pub.dev"
-    source: hosted
-    version: "4.2.4"
   provider:
     dependency: "direct main"
     description:
@@ -905,10 +897,10 @@ packages:
     dependency: transitive
     description:
       name: xdg_directories
-      sha256: bd512f03919aac5f1313eb8249f223bacf4927031bf60b02601f81f687689e86
+      sha256: "7a3f37b05d989967cdddcbb571f1ea834867ae2faa29725fd085180e0883aa15"
       url: "https://pub.dev"
     source: hosted
-    version: "0.2.0+3"
+    version: "1.1.0"
 sdks:
   dart: ">=3.7.2 <4.0.0"
   flutter: ">=3.27.0"

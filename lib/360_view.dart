@@ -3,6 +3,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'dart:math';
 import 'dart:async';
+import 'video_call_home.dart';
 
 void main() {
   runApp(const MyApp());
@@ -77,7 +78,15 @@ class LiveViewScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _actionButton(Icons.video_call, "Video Call"),
+                GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const VideoCallHome())
+                );
+                  },
+                child: _actionButton(Icons.video_call, "Video Call"),
+                ),
                 _actionButton(Icons.record_voice_over, "Speak"),
                 _actionButton(Icons.analytics, "Status"),
                 _actionButton(Icons.settings, "Settings"),

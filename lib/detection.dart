@@ -1,4 +1,7 @@
+// main.dart
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'home_screen.dart';
 import 'settings.dart';
 import 'package:firebase_database/firebase_database.dart';
@@ -10,7 +13,6 @@ void main() {
 
 class DetectionAlertsPage extends StatefulWidget {
   const DetectionAlertsPage({super.key});
-
   @override
   State<DetectionAlertsPage> createState() => _DetectionAlertsPageState();
 }
@@ -18,6 +20,24 @@ class DetectionAlertsPage extends StatefulWidget {
 class _DetectionAlertsPageState extends State<DetectionAlertsPage> {
   int selectedIndex = 0;
   final List<String> tabTitles = ["Fall Detection", "Cough Detection", "Other Detections"];
+  List detections = [];
+
+  @override
+  void initState() {
+    super.initState();
+    fetchDetections();
+  }
+
+  Future<void> fetchDetections() async {
+    final response = await http.get(Uri.parse('http://localhost:3000/detections'));
+    if (response.statusCode == 200) {
+      setState(() {
+        detections = json.decode(response.body);
+      });
+    } else {
+      print("Failed to load data");
+    }
+  }
   final DatabaseReference _alertsRef = FirebaseDatabase.instance.ref('alerts');
   final DatabaseReference _streamRef = FirebaseDatabase.instance.ref('stream_status');
 
@@ -110,7 +130,7 @@ class _DetectionAlertsPageState extends State<DetectionAlertsPage> {
               spacing: 8,
               children: List.generate(
                 tabTitles.length,
-                (index) => DetectionTab(
+                    (index) => DetectionTab(
                   text: tabTitles[index],
                   selected: index == selectedIndex,
                   onTap: () => setState(() => selectedIndex = index),
@@ -119,136 +139,85 @@ class _DetectionAlertsPageState extends State<DetectionAlertsPage> {
             ),
             const SizedBox(height: 16),
             if (selectedIndex == 0) ...[
-              StreamBuilder(
-                stream: _alertsRef.orderByChild('type').equalTo('fall').onValue,
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Text('Error: ${snapshot.error}');
-                  }
-
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (!snapshot.hasData || snapshot.data?.snapshot.value == null) {
-                    return const Center(child: Text('No fall detections yet'));
-                  }
-
-                  final Map<dynamic, dynamic> alerts = 
-                      snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
-
-                  final List<MapEntry<dynamic, dynamic>> sortedAlerts =
-                  alerts.entries.toList()
-                    ..sort((a, b) => DateTime.parse(b.value['timestamp'])
-                        .compareTo(DateTime.parse(a.value['timestamp'])));
-
-                  return Column(
-                    children: sortedAlerts.asMap().entries.map((entry) {
-                      final int index = entry.key;
-                      final data = entry.value.value as Map<dynamic, dynamic>;
-                      final timestamp = data['timestamp'] as String;
-
-                      final bool isLatest = index == 0;
-
-                      return Column(
-                        children: [
-                          DetectionCard(
-                            title: "Fall Detected",
-                            time: _getTimeAgo(timestamp),
-                            urgency: isLatest,  // red color only for latest alert
-                            action: data['status'] == 'active' ? "Pending" : "Resolved",
-                            imageAsset: 'assets/fall.png',
-                            isRecent: isLatest,  // only latest shows buttons
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-                      );
-                    }).toList(),
-                  );
-                },
+              DetectionCard(
+                title: "Fall Detected",
+                time: "10 Min Ago",
+                urgency: true,
+                action: "Pending",
+                imageAsset: 'assets/fall.png',
+                isRecent: true,
+              ),
+              const SizedBox(height: 12),
+              DetectionCard(
+                title: "Fall Detected",
+                time: "12 Days Ago",
+                urgency: false,
+                action: "[ Call / View 360 ]",
+                imageAsset: 'assets/fall.png',
+                isRecent: false,
+              ),
+              const SizedBox(height: 12),
+              DetectionCard(
+                title: "Fall Detected",
+                time: "Last Month",
+                urgency: false,
+                action: "[ Call / View 360 ]",
+                imageAsset: 'assets/fall.png',
+                isRecent: false,
               ),
             ] else if (selectedIndex == 1) ...[
-              StreamBuilder(
-                stream: _streamRef.onValue,
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Text('Error: ${snapshot.error}');
-                  }
-
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (!snapshot.hasData || snapshot.data?.snapshot.value == null) {
-                    return const Center(child: Text('No cough detections yet'));
-                  }
-
-                  final Map<dynamic, dynamic> data = 
-                      snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
-                  
-                  final int coughCount = data['cough_count'] ?? 0;
-                  final String lastUpdate = (data['last_update'] ?? DateTime.now().toIso8601String()) as String;
-                  final String status = data['status'] ?? 'inactive';
-
-                  return Column(
-                    children: [
-                      DetectionCard(
-                        title: "Cough Detected",
-                        time: _getTimeAgo(lastUpdate),
-                        urgency: coughCount >= 20,
-                        action: status == 'active' ? "Active Monitoring" : "Resolved",
-                        imageAsset: 'assets/cough.png',
-                        isRecent: DateTime.now().difference(DateTime.parse(lastUpdate)).inHours < 24,
-                      ),
-                    ],
-                  );
-                },
+              DetectionCard(
+                title: "Cough Detected",
+                time: "5 Days Ago",
+                urgency: false,
+                action: "Pending",
+                imageAsset: 'assets/cough.png',
+                isRecent: false,
+              ),
+              const SizedBox(height: 12),
+              DetectionCard(
+                title: "Cough Detected",
+                time: "5 Days Ago",
+                urgency: false,
+                action: "[ Call / View 360 ]",
+                imageAsset: 'assets/cough.png',
+                isRecent: false,
+              ),
+              const SizedBox(height: 12),
+              DetectionCard(
+                title: "Cough Detected",
+                time: "6 Days Ago",
+                urgency: false,
+                action: "[ Call / View 360 ]",
+                imageAsset: 'assets/cough.png',
+                isRecent: false,
               ),
             ] else if (selectedIndex == 2) ...[
-              StreamBuilder(
-                stream: _alertsRef.orderByChild('type').equalTo('other').onValue,
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Text('Error: ${snapshot.error}');
-                  }
-
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-
-                  if (!snapshot.hasData || snapshot.data?.snapshot.value == null) {
-                    return const Center(child: Text('No other detections yet'));
-                  }
-
-                  final Map<dynamic, dynamic> alerts = 
-                      snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
-                  
-                  final List<MapEntry<dynamic, dynamic>> sortedAlerts = 
-                      alerts.entries.toList()
-                        ..sort((a, b) => DateTime.parse(b.value['timestamp'])
-                            .compareTo(DateTime.parse(a.value['timestamp'])));
-
-                  return Column(
-                    children: sortedAlerts.map((entry) {
-                      final data = entry.value as Map<dynamic, dynamic>;
-                      final timestamp = data['timestamp'] as String;
-                      
-                      return Column(
-                        children: [
-                          DetectionCard(
-                            title: "Unusual Behavior",
-                            time: _getTimeAgo(timestamp),
-                            urgency: false,
-                            action: data['status'] == 'active' ? "Pending" : "Resolved",
-                            imageAsset: 'assets/cough.png',
-                            isRecent: DateTime.now().difference(DateTime.parse(timestamp)).inHours < 24,
-                          ),
-                          const SizedBox(height: 12),
-                        ],
-                      );
-                    }).toList(),
-                  );
-                },
+              DetectionCard(
+                title: "Unusual Behavior",
+                time: "5 Days Ago",
+                urgency: false,
+                action: "Pending",
+                imageAsset: 'assets/cough.png',
+                isRecent: false,
+              ),
+              const SizedBox(height: 12),
+              DetectionCard(
+                title: "Unusual Behavior",
+                time: "5 Days Ago",
+                urgency: false,
+                action: "[ Call / View 360 ]",
+                imageAsset: 'assets/cough.png',
+                isRecent: false,
+              ),
+              const SizedBox(height: 12),
+              DetectionCard(
+                title: "Unusual Behavior",
+                time: "6 Days Ago",
+                urgency: false,
+                action: "[ Call / View 360 ]",
+                imageAsset: 'assets/cough.png',
+                isRecent: false,
               ),
             ]
           ],

@@ -1,32 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:awesome_notifications/awesome_notifications.dart';
-
 import 'intro_screen.dart';
 import 'welcome_screen.dart';
 import 'sign_in_screen.dart';
 import 'global_navigator.dart';
 import 'alert_listener.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-
-  AwesomeNotifications().initialize(
-    null,
-    [
-      NotificationChannel(
-        channelKey: 'alerts_channel',
-        channelName: 'Alerts',
-        channelDescription: 'Notifications for alerts',
-        importance: NotificationImportance.High,
-        defaultColor: Colors.red,
-        ledColor: Colors.white,
-        playSound: false,
-      ),
-    ],
-  );
-
   runApp(const MyApp());
 }
 
@@ -35,7 +16,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AlertListener(
+    return AlertListener( // ✅ Here instead of just /home
       child: MaterialApp(
         navigatorKey: navigatorKey,
         debugShowCheckedModeBanner: false,
@@ -54,6 +35,7 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
 
 class AlvioraHomePage extends StatelessWidget {
   const AlvioraHomePage({super.key});

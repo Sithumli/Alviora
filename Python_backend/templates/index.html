@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRTC Stream</title>
+    <style>
+        body { margin: 0; padding: 0; background-color: black;
+               display: flex; justify-content: center; align-items: center;
+               min-height: 100vh; }
+        video { width: 100%; max-width: 640px; height: auto; background-color: #000; }
+        .status { position: fixed; top: 10px; left: 10px; color: white;
+                  background: rgba(0,0,0,0.5); padding: 5px 10px;
+                  border-radius: 5px; font-family: Arial, sans-serif; }
+    </style>
+</head>
+<body>
+<div class="status" id="status">Connecting...</div>
+<video id="video" autoplay playsinline></video>
+<script src="client.js"></script>
+</body>
+</html>

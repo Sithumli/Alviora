@@ -1,13 +1,13 @@
 plugins {
     id("com.android.application")
-    id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    id("org.jetbrains.kotlin.android")
     id("dev.flutter.flutter-gradle-plugin")
+    id("com.google.gms.google-services")
 }
 
 android {
-    namespace = "com.example.alviora_robot_tab"
-    compileSdk = flutter.compileSdkVersion
+    namespace = "com.example.alviora_app"
+    compileSdk = 35  // Updated to 35
     ndkVersion = "27.0.12077973"
 
     compileOptions {
@@ -20,11 +20,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.alviora_robot_tab"
+        applicationId = "com.example.alviora_app"
         minSdk = 23
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        targetSdk = 35  // Updated to 35 (optional, but recommended)
+        versionCode = 1
+        versionName = "1.0"
     }
 
     buildTypes {
@@ -33,7 +33,6 @@ android {
         }
     }
 }
-
 
 flutter {
     source = "../.."

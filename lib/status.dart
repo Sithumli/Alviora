@@ -5,6 +5,7 @@ import 'package:lottie/lottie.dart';
 import 'home_screen.dart';
 import 'medication_schedule.dart';
 import 'more_health_alerts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class StatusScreen extends StatelessWidget {
   const StatusScreen({Key? key}) : super(key: key);
@@ -43,7 +44,7 @@ class StatusScreen extends StatelessWidget {
                   StreamBuilder<DocumentSnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('health_alerts')
-                        .doc('current_user') // Replace with your user ID logic
+                        .doc(FirebaseAuth.instance.currentUser?.uid)
                         .snapshots(),
                     builder: (context, snapshot) {
                       int cups = 0;
@@ -244,7 +245,7 @@ class StatusScreen extends StatelessWidget {
                       try {
                         await FirebaseFirestore.instance
                             .collection('health_alerts')
-                            .doc('current_user') // Replace with actual user ID
+                            .doc(FirebaseAuth.instance.currentUser?.uid)
                             .set({
                           'dailyWaterIntake': selectedCups.toInt(),
                           'timestamp': Timestamp.now(),

@@ -62,6 +62,9 @@ dependencies:
 
   file_picker: ^10.1.9
 
+  agora_rtc_engine: ^6.2.5
+  permission_handler: ^11.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

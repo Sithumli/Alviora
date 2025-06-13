@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // <-- Added
 import 'package:lottie/lottie.dart'; // Add this to your pubspec.yaml
 
 void showWaterIntakeBottomSheet(BuildContext context, String userId) {
@@ -88,13 +89,17 @@ void showWaterIntakeBottomSheet(BuildContext context, String userId) {
                     minimumSize: const Size(double.infinity, 48),
                   ),
                   onPressed: () async {
-                    await FirebaseFirestore.instance
-                        .collection('health_alerts')
-                        .doc(userId)
-                        .set({
-                      'dailyWaterIntake': selectedCups.toInt(),
-                      'timestamp': Timestamp.now(),
-                    }, SetOptions(merge: true));
+                    final currentUser = FirebaseAuth.instance.currentUser;
+                    if (currentUser != null) {
+                      await FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(currentUser.uid)
+                          .collection('water_intake_logs')
+                          .add({
+                        'cups': selectedCups.toInt(),
+                        'timestamp': Timestamp.now(),
+                      });
+                    }
                     Navigator.pop(context);
                   },
                   icon: const Icon(Icons.water_drop, color: Colors.white),

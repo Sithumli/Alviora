@@ -223,6 +223,11 @@ class Signaling {
 
     peerConnection!.onIceConnectionState = (state) {
       print('ICE connection state changed: $state');
+      // Handle ICE connection failures
+      if (state == RTCIceConnectionState.RTCIceConnectionStateFailed ||
+          state == RTCIceConnectionState.RTCIceConnectionStateDisconnected) {
+        onConnectionStateChanged?.call(RTCPeerConnectionState.RTCPeerConnectionStateDisconnected);
+      }
     };
 
     peerConnection!.onTrack = (RTCTrackEvent event) {

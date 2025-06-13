@@ -54,15 +54,34 @@ class _CallScreenState extends State<CallScreen> {
     if (_isDisposed) return;
 
     setState(() {
-      _connectionState = state.toString().split('.').last;
-      _isInCall = state == RTCPeerConnectionState.connected;
+      _connectionState = _getConnectionStateString(state);
+      _isInCall = state == RTCPeerConnectionState.RTCPeerConnectionStateConnected;
 
-      if (state == RTCPeerConnectionState.failed ||
-          state == RTCPeerConnectionState.disconnected) {
+      if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
+          state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
         _showError('Connection lost. Please try again.');
         _endCall();
       }
     });
+  }
+
+  String _getConnectionStateString(RTCPeerConnectionState state) {
+    switch (state) {
+      case RTCPeerConnectionState.RTCPeerConnectionStateNew:
+        return 'New';
+      case RTCPeerConnectionState.RTCPeerConnectionStateConnecting:
+        return 'Connecting';
+      case RTCPeerConnectionState.RTCPeerConnectionStateConnected:
+        return 'Connected';
+      case RTCPeerConnectionState.RTCPeerConnectionStateDisconnected:
+        return 'Disconnected';
+      case RTCPeerConnectionState.RTCPeerConnectionStateFailed:
+        return 'Failed';
+      case RTCPeerConnectionState.RTCPeerConnectionStateClosed:
+        return 'Closed';
+      default:
+        return 'Unknown';
+    }
   }
 
   void _showError(String message) {

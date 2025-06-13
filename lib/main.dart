@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:alviora_app/screens/call_screen.dart';
 import 'firebase_options.dart';
 
@@ -13,8 +12,7 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // Initialize WebRTC
-  await initializeWebRTC();
+  // No need for WebRTC initialization - it's handled automatically
 
   // Enable persistence only for web platform
   if (Firebase.apps.isNotEmpty && const bool.fromEnvironment('dart.vm.product') == false) {

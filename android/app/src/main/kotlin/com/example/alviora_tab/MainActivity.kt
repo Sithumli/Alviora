@@ -1,4 +1,4 @@
-package com.example.alviora_robot_tab
+package com.example.alviora_tab
 
 import io.flutter.embedding.android.FlutterActivity
 

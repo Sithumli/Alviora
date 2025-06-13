@@ -1,4 +1,4 @@
-name: alviora_robot_tab
+name: alviora_tab
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -30,40 +30,21 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  just_audio: ^0.9.30
-  url_launcher: ^6.1.12
-  intl: ^0.18.1
-  webview_flutter: ^4.2.2
-  http: ^1.4.0
-  # Firebase Core (required for any Firebase features)
-  firebase_core: ^3.13.0
 
-  # Firebase Authentication (for email login/signup)
-  firebase_auth: ^5.5.3
-
-  image_picker: ^1.0.0
-
-  firebase_storage: ^12.4.6
-
-  # Cloud Firestore (to store user data, mood, health etc.)
-  cloud_firestore: ^5.6.7
-
-  # For playing audio
-  audioplayers: ^5.2.1
-
-  # Cupertino Icons for iOS
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
-  firebase_database: ^11.3.6
 
-  file_picker: ^10.1.9
-
-  firebase_messaging: 15.2.6
-  flutter_webrtc:  0.14.1
-  flutter_callkit_incoming: ^2.5.2 # for native incoming screen :contentReference[oaicite:0]{index=0}
+  agora_rtc_engine: ^6.2.5
+  permission_handler: ^11.3.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  http: ^0.13.5
+  geolocator: ^10.1.0
+  geocoding: ^2.2.0
+
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -77,7 +58,16 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
+  fonts:
+    - family: Urbanist
+      fonts:
+        - asset: assets/fonts/Urbanist-Regular.ttf
+        - asset: assets/fonts/Urbanist-ExtraBold.ttf
 
+    - family: TiltNeon
+      fonts:
+        - asset: assets/fonts/TiltNeon[XROT,YROT].ttf
+          weight: 700
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

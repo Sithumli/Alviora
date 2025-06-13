@@ -1,6 +1,6 @@
 {
-    "name": "alviora_robot_tab",
-    "short_name": "alviora_robot_tab",
+    "name": "alviora_tab",
+    "short_name": "alviora_tab",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

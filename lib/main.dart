@@ -1,30 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:alviora_app/screens/call_screen.dart';
+import 'screens/call_screen.dart';  // Updated import path
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-
-  // No need for WebRTC initialization - it's handled automatically
-
-  // Enable persistence only for web platform
-  if (Firebase.apps.isNotEmpty && const bool.fromEnvironment('dart.vm.product') == false) {
-    try {
-      await FirebaseFirestore.instance.enablePersistence(
-        const PersistenceSettings(synchronizeTabs: true),
-      );
-    } catch (e) {
-      print('Persistence not supported on this platform: $e');
-    }
-  }
-
   runApp(const MyApp());
 }
 
@@ -34,9 +17,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Alviora Video Call',
+      title: 'WebRTC Video Call',
       theme: ThemeData.dark(),
-      home: const CallScreen(),
+      home: const CallScreen(),  // Now properly imported
     );
   }
 }

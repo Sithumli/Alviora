@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class Signaling {
   final RTCVideoRenderer localRenderer;
@@ -14,6 +15,7 @@ class Signaling {
   StreamSubscription? _callerCandidatesSubscription;
   StreamSubscription? _calleeCandidatesSubscription;
   bool _isDisposed = false;
+  MediaStream? _localStream;
 
   Signaling({
     required this.localRenderer,
@@ -23,6 +25,13 @@ class Signaling {
 
   Future<void> _openUserMedia() async {
     try {
+      // Request permissions first
+      await [Permission.camera, Permission.microphone].request();
+
+      if (!await Permission.camera.isGranted || !await Permission.microphone.isGranted) {
+        throw Exception('Camera or microphone permission not granted');
+      }
+
       final stream = await navigator.mediaDevices.getUserMedia({
         'video': {
           'width': 640,
@@ -32,6 +41,8 @@ class Signaling {
         },
         'audio': true,
       });
+
+      _localStream = stream;
       localRenderer.srcObject = stream;
     } catch (e) {
       print('Error accessing media devices: $e');
@@ -58,12 +69,10 @@ class Signaling {
       };
 
       peerConnection = await createPeerConnection(configuration);
-
-      // Setup event handlers
       _setupPeerConnectionEventHandlers();
 
-      localRenderer.srcObject!.getTracks().forEach((track) {
-        peerConnection!.addTrack(track, localRenderer.srcObject!);
+      _localStream?.getTracks().forEach((track) {
+        peerConnection!.addTrack(track, _localStream!);
       });
 
       final roomRef = _firestore.collection('calls').doc();
@@ -153,8 +162,8 @@ class Signaling {
       peerConnection = await createPeerConnection(configuration);
       _setupPeerConnectionEventHandlers();
 
-      localRenderer.srcObject!.getTracks().forEach((track) {
-        peerConnection!.addTrack(track, localRenderer.srcObject!);
+      _localStream?.getTracks().forEach((track) {
+        peerConnection!.addTrack(track, _localStream!);
       });
 
       // Set remote description from offer
@@ -246,11 +255,12 @@ class Signaling {
       await peerConnection!.close();
     }
 
-    localRenderer.srcObject?.getTracks().forEach((track) => track.stop());
+    _localStream?.getTracks().forEach((track) => track.stop());
     remoteRenderer.srcObject?.getTracks().forEach((track) => track.stop());
 
     localRenderer.srcObject = null;
     remoteRenderer.srcObject = null;
+    _localStream = null;
 
     _remoteDescriptionSet = false;
     roomId = null;

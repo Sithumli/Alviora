@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:alviora_app/services/signaling.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class CallScreen extends StatefulWidget {
   const CallScreen({Key? key}) : super(key: key);
@@ -19,11 +20,21 @@ class _CallScreenState extends State<CallScreen> {
   String _connectionState = '';
   bool _isInCall = false;
   bool _isDisposed = false;
+  bool _hasPermissions = false;
 
   @override
   void initState() {
     super.initState();
     _initRenderers();
+    _checkPermissions();
+  }
+
+  Future<void> _checkPermissions() async {
+    final status = await [Permission.camera, Permission.microphone].request();
+    setState(() {
+      _hasPermissions = status[Permission.camera]!.isGranted &&
+          status[Permission.microphone]!.isGranted;
+    });
   }
 
   Future<void> _initRenderers() async {
@@ -41,13 +52,13 @@ class _CallScreenState extends State<CallScreen> {
 
   void _onConnectionStateChanged(RTCPeerConnectionState state) {
     if (_isDisposed) return;
-    
+
     setState(() {
-      _connectionState = state.toString();
-      _isInCall = state == RTCPeerConnectionState.RTCPeerConnectionStateConnected;
-      
-      if (state == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
-          state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected) {
+      _connectionState = state.toString().split('.').last;
+      _isInCall = state == RTCPeerConnectionState.connected;
+
+      if (state == RTCPeerConnectionState.failed ||
+          state == RTCPeerConnectionState.disconnected) {
         _showError('Connection lost. Please try again.');
         _endCall();
       }
@@ -61,6 +72,13 @@ class _CallScreenState extends State<CallScreen> {
           content: Text(message),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 5),
+          action: SnackBarAction(
+            label: 'Dismiss',
+            textColor: Colors.white,
+            onPressed: () {
+              ScaffoldMessenger.of(context).hideCurrentSnackBar();
+            },
+          ),
         ),
       );
     }
@@ -77,8 +95,8 @@ class _CallScreenState extends State<CallScreen> {
   }
 
   Future<void> _createRoom() async {
-    if (_isCreatingRoom) return;
-    
+    if (_isCreatingRoom || !_hasPermissions) return;
+
     setState(() {
       _isCreatingRoom = true;
       _connectionState = 'Creating room...';
@@ -94,7 +112,17 @@ class _CallScreenState extends State<CallScreen> {
       }
     } catch (e) {
       if (!_isDisposed) {
-        _showError('Error creating room: $e');
+        String errorMessage = 'Error creating room: ';
+        if (e.toString().contains('Timeout')) {
+          errorMessage += 'No peer joined within 30 seconds. Please try again.';
+        } else if (e.toString().contains('Failed to create peer connection')) {
+          errorMessage += 'Could not establish WebRTC connection. Please check your internet connection.';
+        } else if (e.toString().contains('Local media stream is null')) {
+          errorMessage += 'Could not access camera/microphone. Please check permissions.';
+        } else {
+          errorMessage += e.toString();
+        }
+        _showError(errorMessage);
         setState(() {
           _connectionState = 'Error creating room';
         });
@@ -109,8 +137,8 @@ class _CallScreenState extends State<CallScreen> {
   }
 
   Future<void> _joinRoom() async {
-    if (_isJoiningRoom) return;
-    
+    if (_isJoiningRoom || !_hasPermissions) return;
+
     final roomId = _roomIdController.text.trim();
     if (roomId.isEmpty) {
       _showError('Please enter a Room ID');
@@ -131,7 +159,17 @@ class _CallScreenState extends State<CallScreen> {
       }
     } catch (e) {
       if (!_isDisposed) {
-        _showError('Error joining room: $e');
+        String errorMessage = 'Error joining room: ';
+        if (e.toString().contains('Room does not exist')) {
+          errorMessage += 'Invalid Room ID. Please check and try again.';
+        } else if (e.toString().contains('Failed to create peer connection')) {
+          errorMessage += 'Could not establish WebRTC connection. Please check your internet connection.';
+        } else if (e.toString().contains('Local media stream is null')) {
+          errorMessage += 'Could not access camera/microphone. Please check permissions.';
+        } else {
+          errorMessage += e.toString();
+        }
+        _showError(errorMessage);
         setState(() {
           _connectionState = 'Error joining room';
         });
@@ -169,7 +207,7 @@ class _CallScreenState extends State<CallScreen> {
         actions: [
           if (_isInCall)
             IconButton(
-              icon: const Icon(Icons.call_end),
+              icon: const Icon(Icons.call_end, color: Colors.red),
               onPressed: _endCall,
             ),
         ],
@@ -183,6 +221,15 @@ class _CallScreenState extends State<CallScreen> {
               child: Text(
                 _connectionState,
                 style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          if (!_hasPermissions)
+            Container(
+              padding: const EdgeInsets.all(16),
+              color: Colors.orange,
+              child: const Text(
+                'Camera and microphone permissions are required',
+                style: TextStyle(color: Colors.white),
               ),
             ),
           Expanded(
@@ -223,13 +270,13 @@ class _CallScreenState extends State<CallScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
-                  onPressed: _isCreatingRoom ? null : _createRoom,
+                  onPressed: _isCreatingRoom || !_hasPermissions ? null : _createRoom,
                   child: _isCreatingRoom
                       ? const CircularProgressIndicator()
                       : const Text('Create Room'),
                 ),
                 ElevatedButton(
-                  onPressed: _isJoiningRoom ? null : _joinRoom,
+                  onPressed: _isJoiningRoom || !_hasPermissions ? null : _joinRoom,
                   child: _isJoiningRoom
                       ? const CircularProgressIndicator()
                       : const Text('Join Room'),

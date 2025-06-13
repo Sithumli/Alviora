@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:lottie/lottie.dart';
 import 'home_screen.dart';
 import 'medication_schedule.dart';
-import 'package:firebase_database/firebase_database.dart';
-
+import 'more_health_alerts.dart';
 
 class StatusScreen extends StatelessWidget {
   const StatusScreen({Key? key}) : super(key: key);
@@ -36,11 +37,28 @@ class StatusScreen extends StatelessWidget {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              // Health metrics cards (unchanged)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildTopCard(Icons.local_drink, "Daily Water Intake", "4 Cups", true),
+                  StreamBuilder<DocumentSnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('health_alerts')
+                        .doc('current_user') // Replace with your user ID logic
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      int cups = 0;
+                      if (snapshot.hasData && snapshot.data!.exists) {
+                        cups = snapshot.data!['dailyWaterIntake'] ?? 0;
+                      }
+                      return _buildTopCard(
+                        Icons.local_drink,
+                        "Daily Water Intake",
+                        "$cups Cups",
+                        true,
+                        onAdd: () => _showWaterIntakeBottomSheet(context),
+                      );
+                    },
+                  ),
                   _buildTopCard(Icons.mood, "Mood", "Good", false),
                 ],
               ),
@@ -56,14 +74,12 @@ class StatusScreen extends StatelessWidget {
               _buildExerciseCard(),
               const SizedBox(height: 20),
 
-              // Health Alerts
               _buildSectionTitle("Recent Health Alerts"),
               const SizedBox(height: 10),
               _buildAlertTile("Slight coughing detected", "Yesterday, 10:30 PM"),
               _buildAlertTile("Lower activity than usual", "2 days ago"),
               const SizedBox(height: 20),
 
-              // Medication Tracker
               _buildSectionTitle(
                 "Medication Tracker",
                 onAdd: () {
@@ -75,7 +91,6 @@ class StatusScreen extends StatelessWidget {
               ),
               const SizedBox(height: 10),
 
-              // Firestore medication list (read-only with delete button)
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('medications')
@@ -108,7 +123,6 @@ class StatusScreen extends StatelessWidget {
                           time,
                           taken,
                           onDelete: () async {
-                            // Delete medication doc from Firestore
                             try {
                               await FirebaseFirestore.instance
                                   .collection('medications')
@@ -133,7 +147,7 @@ class StatusScreen extends StatelessWidget {
               ),
 
               const SizedBox(height: 20),
-              _buildMoreAlertsButton(),
+              _buildMoreAlertsButton(context),
             ],
           ),
         ),
@@ -141,7 +155,125 @@ class StatusScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMoreAlertsButton() {
+  void _showWaterIntakeBottomSheet(BuildContext context) {
+    double selectedCups = 0;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25.0)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                top: 16,
+                left: 24,
+                right: 24,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 50,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    "Select water cups",
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  Lottie.asset(
+                    'assets/water_glass.json',
+                    height: 120,
+                    repeat: true,
+                  ),
+                  const SizedBox(height: 10),
+                  Slider(
+                    min: 0,
+                    max: 12,
+                    divisions: 12,
+                    label: '${selectedCups.toInt()} cups',
+                    value: selectedCups,
+                    onChanged: (double value) {
+                      setState(() {
+                        selectedCups = value;
+                      });
+                    },
+                    activeColor: const Color(0xFF6785F2),
+                    inactiveColor: Colors.grey[300],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    "${selectedCups.toInt()} cups",
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF6785F2),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  const Text(
+                    '"Keep sipping — your body will thank you!"',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.black54,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF6785F2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      minimumSize: const Size(double.infinity, 48),
+                    ),
+                    onPressed: () async {
+                      try {
+                        await FirebaseFirestore.instance
+                            .collection('health_alerts')
+                            .doc('current_user') // Replace with actual user ID
+                            .set({
+                          'dailyWaterIntake': selectedCups.toInt(),
+                          'timestamp': Timestamp.now(),
+                        }, SetOptions(merge: true));
+                        if (context.mounted) Navigator.pop(context);
+                      } catch (e) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Error saving: $e')),
+                          );
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.water_drop, color: Colors.white),
+                    label: const Text(
+                      "Save",
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildMoreAlertsButton(BuildContext context) {
     return Container(
       width: double.infinity,
       height: 45,
@@ -152,7 +284,12 @@ class StatusScreen extends StatelessWidget {
         ),
       ),
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const MoreHealthAlertsScreen()),
+          );
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
@@ -168,7 +305,7 @@ class StatusScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTopCard(IconData icon, String title, String value, bool hasAdd) {
+  Widget _buildTopCard(IconData icon, String title, String value, bool hasAdd, {VoidCallback? onAdd}) {
     return Expanded(
       child: Container(
         height: 100,
@@ -185,18 +322,16 @@ class StatusScreen extends StatelessWidget {
               children: [
                 Icon(icon, color: Colors.blue),
                 const Spacer(),
-                if (hasAdd) const Icon(Icons.add, size: 18, color: Colors.blue),
+                if (hasAdd) 
+                  GestureDetector(
+                    onTap: onAdd,
+                    child: const Icon(Icons.add, size: 18, color: Colors.blue),
+                  ),
               ],
             ),
             const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 12),
-            ),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-            ),
+            Text(title, style: const TextStyle(fontSize: 12)),
+            Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
           ],
         ),
       ),
@@ -313,14 +448,11 @@ class StatusScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Delete button
           IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.red),
             onPressed: onDelete,
           ),
-
           const SizedBox(width: 8),
-
           const Icon(Icons.medical_services, color: Colors.blue),
           const SizedBox(width: 12),
           Column(
@@ -335,6 +467,7 @@ class StatusScreen extends StatelessWidget {
       ),
     );
   }
+
   Widget _buildLiveTemperatureCard() {
     final dhtRef = FirebaseDatabase.instance.ref().child('dht22_sensor');
 

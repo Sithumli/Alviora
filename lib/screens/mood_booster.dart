@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'mood_booster_services/meditation.dart';
+import 'mood_booster_services/mood_music.dart';
+import 'mood_booster_services/mood_chat.dart';
+import 'mood_booster_services/mood_gallery.dart';
+import 'mood_booster_services/quick_breathing.dart';
+import 'mood_booster_services/deep_breathing.dart';
 
 class MoodBoosterScreen extends StatelessWidget {
   const MoodBoosterScreen({Key? key}) : super(key: key);
@@ -228,7 +233,10 @@ class MoodBoosterScreen extends StatelessWidget {
                             subtitle: 'Curated playlists to enhance and lift your mood',
                             duration: '5 mins',
                             onTap: () {
-                              // Navigate to MoodMusicPage()
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => MoodMusicPage()),
+                              );
                             },
                           ),
                         ),
@@ -241,7 +249,10 @@ class MoodBoosterScreen extends StatelessWidget {
                             subtitle: 'Connect with supportive community',
                             duration: '15 mins',
                             onTap: () {
-                              // Navigate to PositiveChatPage()
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => MoodChatScreen()),
+                              );
                             },
                           ),
                         ),
@@ -249,8 +260,6 @@ class MoodBoosterScreen extends StatelessWidget {
                     ),
 
                     const SizedBox(height: 16),
-
-                    // Second Row
                     Row(
                       children: [
                         Expanded(
@@ -261,7 +270,10 @@ class MoodBoosterScreen extends StatelessWidget {
                             subtitle: 'Your collection of happy moments',
                             duration: '3 mins',
                             onTap: () {
-
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => MoodGallery()),
+                              );
                             },
                           ),
                         ),
@@ -274,7 +286,10 @@ class MoodBoosterScreen extends StatelessWidget {
                             subtitle: 'Simple breathing exercises for balance',
                             duration: '5 mins',
                             onTap: () {
-                              // Navigate to DeepBreathingPage()
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => DeepBreathing()),
+                              );
                             },
                           ),
                         ),
@@ -287,7 +302,10 @@ class MoodBoosterScreen extends StatelessWidget {
                             subtitle: 'Rapid breathing exercises for instant calm',
                             duration: '2 mins',
                             onTap: () {
-                              // Navigate to QuickBreathingPage()
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (context) => QuickBreathing()),
+                              );
                             },
                           ),
                         ),

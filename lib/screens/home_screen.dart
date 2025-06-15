@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'call_screen.dart';
 import 'connect_with_family.dart'; // Ensure this exists or comment out for now
 import 'package:alviora_tab/widgets/weather_widget.dart';
+import 'to_do_list.dart';
+import 'status.dart';
+import 'telemedicine_hub.dart';
+import 'mood_booster.dart';
 
 void main() {
   runApp(const AlvioraApp());
@@ -147,28 +151,61 @@ class AlvioraHomePage extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            const Flexible(
-                              child: AppCard(
-                                icon: Icons.list_alt_rounded,
-                                label: 'Todo List',
+                            Flexible(
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => ToDoListPage()),
+                                  );
+                                },
+                                child: const AppCard(
+                                  icon: Icons.list_alt_rounded,
+                                  label: 'Todo List',
+                                ),
                               ),
                             ),
-                            const Flexible(
-                              child: AppCard(
-                                icon: Icons.monitor_heart,
-                                label: 'Status',
+
+                            Flexible(
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => StatusPage()),
+                                  );
+                                },
+                                child: const AppCard(
+                                  icon: Icons.list_alt_rounded,
+                                  label: 'Status',
+                                ),
                               ),
                             ),
-                            const Flexible(
-                              child: AppCard(
-                                icon: Icons.medical_services,
-                                label: 'Telemedicine\nHub',
+                            Flexible(
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => TelemedicineHub()),
+                                  );
+                                },
+                                child: const AppCard(
+                                  icon: Icons.list_alt_rounded,
+                                  label: 'Telemedicine Hub',
+                                ),
                               ),
                             ),
-                            const Flexible(
-                              child: AppCard(
-                                icon: Icons.emoji_emotions_rounded,
-                                label: 'Mood Booster\nMode',
+                            Flexible(
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => MoodBoosterScreen()),
+                                  );
+                                },
+                                child: const AppCard(
+                                  icon: Icons.list_alt_rounded,
+                                  label: 'Mood booster ',
+                                ),
                               ),
                             ),
                           ],

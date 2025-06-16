@@ -164,7 +164,7 @@ class _FamilyMemberCard extends StatelessWidget {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const CallScreen()),
+                          MaterialPageRoute(builder: (context) => const TabletVideoCallScreen()),
                         );
                       },
                     ),

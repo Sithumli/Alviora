@@ -6,6 +6,9 @@ import 'to_do_list.dart';
 import 'status.dart';
 import 'telemedicine_hub.dart';
 import 'mood_booster.dart';
+import 'emergency.dart';
+import 'package:alviora_tab/messages.dart';
+import 'package:alviora_tab/settings.dart';
 
 void main() {
   runApp(const AlvioraApp());
@@ -35,7 +38,7 @@ class AlvioraHomePage extends StatelessWidget {
       body: SafeArea(
         child: Row(
           children: [
-            // Sidebar
+            // Sidebar - UPDATED WITH NAVIGATION
             Container(
               width: 140,
               decoration: const BoxDecoration(
@@ -47,17 +50,41 @@ class AlvioraHomePage extends StatelessWidget {
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.warning_amber_rounded, color: Colors.red, size: 90),
-                  SizedBox(height: 50),
-                  Icon(Icons.message_rounded, color: Colors.white, size: 70),
-                  SizedBox(height: 50),
-                  Icon(Icons.settings_rounded, color: Colors.white, size: 70),
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const EmergencyScreen()),
+                      );
+                    },
+                    child: const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 90),
+                  ),
+                  const SizedBox(height: 50),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const MessagesScreen()),
+                      );
+                    },
+                    child: const Icon(Icons.message_rounded, color: Colors.white, size: 70),
+                  ),
+                  const SizedBox(height: 50),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                      );
+                    },
+                    child: const Icon(Icons.settings_rounded, color: Colors.white, size: 70),
+                  ),
                 ],
               ),
             ),
 
-            // Main content
+            // Main content - FIXED EXPANDED SECTION
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),

@@ -10,6 +10,8 @@ import 'mood_booster.dart';
 import 'emergency.dart';
 import 'package:alviora_tab/messages.dart';
 import 'package:alviora_tab/settings.dart';
+import 'package:alviora_tab/widgets/environment_stats_widget.dart';
+
 
 void main() {
   runApp(const AlvioraApp());
@@ -137,16 +139,7 @@ class _AlvioraHomePageState extends State<AlvioraHomePage> {
                         const SizedBox(width: 200),
                         const WeatherWidget(),
                         const SizedBox(width: 300),
-                        const Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text('ROOM TEMP', style: TextStyle(fontSize: 16)),
-                            Text('25°C', style: TextStyle(fontSize: 32,color: Color(0xFF5EA8FF))),
-                            SizedBox(height: 20),
-                            Text('AIR QUALITY', style: TextStyle(fontSize: 16)),
-                            Text('GOOD', style: TextStyle(fontSize: 32,color: Color(0xFF5EA8FF))),
-                          ],
-                        ),
+                        const EnvironmentStatsWidget(),
                       ],
                     ),
 

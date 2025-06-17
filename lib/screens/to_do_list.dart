@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:awesome_notifications/awesome_notifications.dart';
+import 'dart:async';
+import '../FullScreenAlertPage.dart';
+import '../main.dart';
+import '../services/notification_service.dart';
+import '../services/task_service.dart';
 
 class ToDoListPage extends StatefulWidget {
   const ToDoListPage({super.key});
@@ -11,146 +17,280 @@ class ToDoListPage extends StatefulWidget {
 class _ToDoListPageState extends State<ToDoListPage> {
   List<Map<String, dynamic>> tasks = [];
   bool isLoading = true;
+  final _notificationService = NotificationService();
+  StreamSubscription? _medicationsSubscription;
+  StreamSubscription? _quickBreathingSubscription;
+  StreamSubscription? _deepBreathingSubscription;
+  StreamSubscription? _schedulesSubscription;
+  StreamSubscription? _waterSubscription;
 
   @override
   void initState() {
     super.initState();
-    fetchTasks();
+    _setupRealTimeListeners();
   }
 
-  Future<void> fetchTasks() async {
+  void _setupRealTimeListeners() {
     final today = DateTime.now();
-    final formattedDate =
-        "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
+    final startOfDay = DateTime(today.year, today.month, today.day);
+    final startOfNextDay = startOfDay.add(const Duration(days: 1));
 
-    final firestore = FirebaseFirestore.instance;
+    // Listen to medications
+    _medicationsSubscription = FirebaseFirestore.instance
+        .collection('medications')
+        .where('datetime', isGreaterThanOrEqualTo: startOfDay.toIso8601String())
+        .where('datetime', isLessThan: startOfNextDay.toIso8601String())
+        .snapshots()
+        .listen((snapshot) {
+      _handleMedicationsUpdate(snapshot);
+    });
 
-    List<Map<String, dynamic>> fetchedTasks = [];
+    // Listen to quick breathing
+    _quickBreathingSubscription = FirebaseFirestore.instance
+        .collection('quick_breathing_schedules')
+        .where('scheduledDateTime', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('scheduledDateTime', isLessThan: Timestamp.fromDate(startOfNextDay))
+        .snapshots()
+        .listen((snapshot) {
+      _handleQuickBreathingUpdate(snapshot);
+    });
 
-    try {
-      // --- Normal Schedules ---
-      // Firestore requires a composite index for where + orderBy on different fields
-      final normalSnapshot = await firestore
-          .collection('schedules')
-          .where('date', isEqualTo: formattedDate)
-      // If 'from' is a string or timestamp, ensure proper ordering or create index.
-          .orderBy('from')
-          .get();
+    // Listen to deep breathing
+    _deepBreathingSubscription = FirebaseFirestore.instance
+        .collection('deep_breathing_schedules')
+        .where('scheduledDateTime', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('scheduledDateTime', isLessThan: Timestamp.fromDate(startOfNextDay))
+        .snapshots()
+        .listen((snapshot) {
+      _handleDeepBreathingUpdate(snapshot);
+    });
 
-      fetchedTasks.addAll(normalSnapshot.docs.map((doc) {
-        final data = doc.data();
-        return {
-          'icon': Icons.event_note,
-          'title': data['description'] ?? 'No Description',
-          'status': data['hasEvent'] == true ? 'Scheduled' : 'Not Scheduled',
-          'time': "${data['from']} - ${data['to']}",
-          'details': [
-            "From: ${data['from'] ?? 'N/A'}",
-            "To: ${data['to'] ?? 'N/A'}",
-            "Created at: ${data['createdAt'] != null ? (data['createdAt'] as Timestamp).toDate().toLocal().toString().substring(0, 16) : 'N/A'}",
-          ],
-        };
-      }));
+    // Listen to schedules
+    _schedulesSubscription = FirebaseFirestore.instance
+        .collection('schedules')
+        .where('date', isEqualTo: "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}")
+        .snapshots()
+        .listen((snapshot) {
+      _handleSchedulesUpdate(snapshot);
+    });
 
-      // --- Quick Breathing ---
-      final startOfDay = DateTime(today.year, today.month, today.day);
-      final startOfNextDay = startOfDay.add(const Duration(days: 1));
+    // Listen to water intake settings
+    _waterSubscription = FirebaseFirestore.instance
+        .collection('health_alerts')
+        .doc('9C49NtsHl0TajBKTDzEIoSV4oNZ2')
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists) {
+        _handleWaterUpdate(snapshot.data()!);
+      }
+    });
+  }
 
-      final quickSnapshot = await firestore
-          .collection('quick_breathing_schedules')
-          .where('scheduledDateTime', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-          .where('scheduledDateTime', isLessThan: Timestamp.fromDate(startOfNextDay))
-          .get();
-
-      fetchedTasks.addAll(quickSnapshot.docs.map((doc) {
-        final data = doc.data();
-        final scheduledTimestamp = data['scheduledDateTime'] as Timestamp?;
-        final scheduledDateTime = scheduledTimestamp?.toDate().toLocal();
-
-        return {
-          'icon': Icons.air,
-          'title': "Quick Breathing (${data['durationMinutes'] ?? 0} min)",
-          'status': data['recurrence'] ?? 'One-time',
-          'time': scheduledDateTime != null
-              ? scheduledDateTime.toString().substring(11, 16)
-              : 'N/A',
-          'details': [
-            "Duration: ${data['durationMinutes'] ?? 'N/A'} minutes",
-            "Recurrence: ${data['recurrence'] ?? 'N/A'}",
-            "Scheduled: ${scheduledDateTime?.toString().substring(0, 16) ?? 'N/A'}",
-          ],
-        };
-      }));
-
-      // --- Deep Breathing ---
-      final deepSnapshot = await firestore
-          .collection('deep_breathing_schedules')
-          .where('scheduledDateTime', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-          .where('scheduledDateTime', isLessThan: Timestamp.fromDate(startOfNextDay))
-          .get();
-
-      fetchedTasks.addAll(deepSnapshot.docs.map((doc) {
-        final data = doc.data();
-        final scheduledTimestamp = data['scheduledDateTime'] as Timestamp?;
-        final scheduledDateTime = scheduledTimestamp?.toDate().toLocal();
-
-        return {
-          'icon': Icons.spa,
-          'title': "Deep Breathing (${data['durationMinutes'] ?? 0} min)",
-          'status': data['recurrence'] ?? 'One-time',
-          'time': scheduledDateTime != null
-              ? scheduledDateTime.toString().substring(11, 16)
-              : 'N/A',
-          'details': [
-            "Duration: ${data['durationMinutes'] ?? 'N/A'} minutes",
-            "Recurrence: ${data['recurrence'] ?? 'N/A'}",
-            "Scheduled: ${scheduledDateTime?.toString().substring(0, 16) ?? 'N/A'}",
-          ],
-        };
-      }));
-
-      // --- Water Intake Reminder ---
-      final waterDoc = await firestore
-          .collection('health_alerts')
-          .doc('9C49NtsHl0TajBKTDzEIoSV4oNZ2')
-          .get();
-
-      if (waterDoc.exists) {
-        final data = waterDoc.data()!;
-        final cups = data['dailyWaterIntake'] ?? 0;
-        if (cups > 0) {
-          final startHour = 8;
-          final endHour = 20;
-          final interval = ((endHour - startHour) * 60) ~/ cups;
-
-          for (int i = 0; i < cups; i++) {
-            final scheduled = DateTime(today.year, today.month, today.day, startHour)
-                .add(Duration(minutes: i * interval));
-            fetchedTasks.add({
-              'icon': Icons.local_drink,
-              'title': "Drink Water (Cup ${i + 1}/$cups)",
-              'status': 'Hydration',
-              'time':
-              "${scheduled.hour.toString().padLeft(2, '0')}:${scheduled.minute.toString().padLeft(2, '0')}",
+  void _handleMedicationsUpdate(QuerySnapshot snapshot) {
+    final List<Map<String, dynamic>> newTasks = [];
+    for (var doc in snapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      if (data['status'] != 'Completed' && data['status'] != 'Skipped') {
+        final rawDatetime = DateTime.tryParse(data['datetime'] ?? '');
+        if (rawDatetime != null) {
+          final now = DateTime.now();
+          final datetime = DateTime(
+            now.year,
+            rawDatetime.month,
+            rawDatetime.day,
+            rawDatetime.hour,
+            rawDatetime.minute,
+          );
+          
+          if (datetime.isAfter(DateTime.now())) {
+            newTasks.add({
+              'icon': Icons.medication,
+              'title': data['title'] ?? 'Medication',
+              'status': data['status'] ?? 'Upcoming',
+              'time': datetime.toLocal().toString().substring(11, 16),
               'details': [
-                "Auto spaced based on $cups cups",
-                "Hydration scheduled at ${scheduled.toLocal().toString().substring(0, 16)}",
+                "Scheduled for: ${datetime.toLocal().toString().substring(0, 16)}",
+                "Status: ${data['status'] ?? 'Upcoming'}",
+                if (data['notes'] != null) "Notes: ${data['notes']}",
               ],
             });
+            
+            _notificationService.scheduleAlert(
+              data['title'] ?? 'Medication',
+              datetime,
+              taskType: 'medication',
+              taskId: doc.id,
+              additionalInfo: "Time to take your medication",
+            );
           }
         }
       }
-    } catch (e) {
-      // You can log errors here
-      print('Error fetching tasks: $e');
     }
+    _updateTasks(newTasks, 'medication');
+  }
 
+  void _handleQuickBreathingUpdate(QuerySnapshot snapshot) {
+    final List<Map<String, dynamic>> newTasks = [];
+    for (var doc in snapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      if (data['status'] != 'Completed' && data['status'] != 'Skipped') {
+        final scheduledDateTime = (data['scheduledDateTime'] as Timestamp?)?.toDate().toLocal();
+        final durationMinutes = data['durationMinutes'] ?? 0;
+        
+        if (scheduledDateTime != null && scheduledDateTime.isAfter(DateTime.now())) {
+          final title = "Quick Breathing (${durationMinutes} min)";
+          newTasks.add({
+            'icon': Icons.air,
+            'title': title,
+            'status': data['recurrence'] ?? 'One-time',
+            'time': scheduledDateTime.toString().substring(11, 16),
+            'details': [
+              "Duration: ${durationMinutes} minutes",
+              "Recurrence: ${data['recurrence'] ?? 'N/A'}",
+              "Scheduled: ${scheduledDateTime.toString().substring(0, 16)}",
+            ],
+          });
+          
+          _notificationService.scheduleAlert(
+            title,
+            scheduledDateTime,
+            taskType: 'quick_breathing',
+            taskId: doc.id,
+            additionalInfo: "Duration: ${durationMinutes} minutes",
+          );
+        }
+      }
+    }
+    _updateTasks(newTasks, 'quick_breathing');
+  }
+
+  void _handleDeepBreathingUpdate(QuerySnapshot snapshot) {
+    final List<Map<String, dynamic>> newTasks = [];
+    for (var doc in snapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      if (data['status'] != 'Completed' && data['status'] != 'Skipped') {
+        final scheduledDateTime = (data['scheduledDateTime'] as Timestamp?)?.toDate().toLocal();
+        final durationMinutes = data['durationMinutes'] ?? 0;
+        
+        if (scheduledDateTime != null && scheduledDateTime.isAfter(DateTime.now())) {
+          final title = "Deep Breathing (${durationMinutes} min)";
+          newTasks.add({
+            'icon': Icons.spa,
+            'title': title,
+            'status': data['recurrence'] ?? 'One-time',
+            'time': scheduledDateTime.toString().substring(11, 16),
+            'details': [
+              "Duration: ${durationMinutes} minutes",
+              "Recurrence: ${data['recurrence'] ?? 'N/A'}",
+              "Scheduled: ${scheduledDateTime.toString().substring(0, 16)}",
+            ],
+          });
+          
+          _notificationService.scheduleAlert(
+            title,
+            scheduledDateTime,
+            taskType: 'deep_breathing',
+            taskId: doc.id,
+            additionalInfo: "Duration: ${durationMinutes} minutes",
+          );
+        }
+      }
+    }
+    _updateTasks(newTasks, 'deep_breathing');
+  }
+
+  void _handleSchedulesUpdate(QuerySnapshot snapshot) {
+    final List<Map<String, dynamic>> newTasks = [];
+    for (var doc in snapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      if (data['status'] != 'Completed' && data['status'] != 'Skipped') {
+        final fromTime = DateTime.tryParse("${data['date']}T${data['from']}");
+        if (fromTime != null && fromTime.isAfter(DateTime.now())) {
+          newTasks.add({
+            'icon': Icons.event_note,
+            'title': data['description'] ?? 'No Description',
+            'status': data['hasEvent'] == true ? 'Scheduled' : 'Not Scheduled',
+            'time': "${data['from']} - ${data['to']}",
+            'details': [
+              "From: ${data['from'] ?? 'N/A'}",
+              "To: ${data['to'] ?? 'N/A'}",
+              "Created at: ${data['createdAt'] != null ? (data['createdAt'] as Timestamp).toDate().toLocal().toString().substring(0, 16) : 'N/A'}",
+            ],
+          });
+          
+          _notificationService.scheduleAlert(
+            data['description'] ?? 'Task Reminder',
+            fromTime,
+            taskType: 'schedule',
+            taskId: doc.id,
+            additionalInfo: "From ${data['from']} to ${data['to']}",
+          );
+        }
+      }
+    }
+    _updateTasks(newTasks, 'schedule');
+  }
+
+  void _handleWaterUpdate(Map<String, dynamic> data) {
+    final cups = data['dailyWaterIntake'] ?? 0;
+    if (cups > 0) {
+      final List<Map<String, dynamic>> newTasks = [];
+      final today = DateTime.now();
+      final startHour = 8;
+      final endHour = 20;
+      final interval = ((endHour - startHour) * 60) ~/ cups;
+
+      for (int i = 0; i < cups; i++) {
+        final scheduled = DateTime(today.year, today.month, today.day, startHour)
+            .add(Duration(minutes: i * interval));
+        
+        if (scheduled.isAfter(DateTime.now())) {
+          final title = "Drink Water (Cup ${i + 1}/$cups)";
+          newTasks.add({
+            'icon': Icons.local_drink,
+            'title': title,
+            'status': 'Hydration',
+            'time': "${scheduled.hour.toString().padLeft(2, '0')}:${scheduled.minute.toString().padLeft(2, '0')}",
+            'details': [
+              "Auto spaced based on $cups cups",
+              "Hydration scheduled at ${scheduled.toLocal().toString().substring(0, 16)}",
+            ],
+          });
+          
+          _notificationService.scheduleAlert(
+            title,
+            scheduled,
+            taskType: 'water',
+            taskId: 'water_${i + 1}',
+            additionalInfo: "Stay hydrated! Cup ${i + 1} of $cups",
+          );
+        }
+      }
+      _updateTasks(newTasks, 'water');
+    }
+  }
+
+  void _updateTasks(List<Map<String, dynamic>> newTasks, String taskType) {
     setState(() {
-      tasks = fetchedTasks;
+      // Remove old tasks of this type
+      tasks.removeWhere((task) => task['taskType'] == taskType);
+      // Add new tasks
+      tasks.addAll(newTasks.map((task) => {...task, 'taskType': taskType}));
+      // Sort tasks by time
+      tasks.sort((a, b) => a['time'].compareTo(b['time']));
       isLoading = false;
     });
   }
 
+  @override
+  void dispose() {
+    _medicationsSubscription?.cancel();
+    _quickBreathingSubscription?.cancel();
+    _deepBreathingSubscription?.cancel();
+    _schedulesSubscription?.cancel();
+    _waterSubscription?.cancel();
+    super.dispose();
+  }
 
   Widget buildTaskCard({
     required IconData icon,
@@ -204,10 +344,7 @@ class _ToDoListPageState extends State<ToDoListPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Text(
-                      title,
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-                    ),
+                    child: Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20)),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -215,19 +352,14 @@ class _ToDoListPageState extends State<ToDoListPage> {
                       color: Colors.grey.shade200,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Text(
-                      time,
-                      style: TextStyle(fontSize: 16, color: Colors.black87, fontWeight: FontWeight.w500),
-                    ),
+                    child: Text(time,
+                        style: TextStyle(fontSize: 16, color: Colors.black87, fontWeight: FontWeight.w500)),
                   ),
                 ],
               ),
               subtitle: Padding(
                 padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  status,
-                  style: TextStyle(color: Colors.black54, fontSize: 16),
-                ),
+                child: Text(status, style: TextStyle(color: Colors.black54, fontSize: 16)),
               ),
               children: details
                   .map((detail) => ListTile(
@@ -236,12 +368,7 @@ class _ToDoListPageState extends State<ToDoListPage> {
                   children: [
                     Icon(Icons.brightness_1, size: 10, color: Colors.black54),
                     const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        detail,
-                        style: TextStyle(fontSize: 18),
-                      ),
-                    ),
+                    Expanded(child: Text(detail, style: TextStyle(fontSize: 18))),
                   ],
                 ),
               ))
@@ -272,6 +399,40 @@ class _ToDoListPageState extends State<ToDoListPage> {
                     label: Text("Go Back", style: TextStyle(fontSize: 18)),
                     style: TextButton.styleFrom(foregroundColor: Colors.blue),
                   ),
+                  Spacer(),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      try {
+                        // Show notification immediately
+                        await AwesomeNotifications().createNotification(
+                          content: NotificationContent(
+                            id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
+                            channelKey: 'task_alerts',
+                            title: "Test Notification",
+                            body: "This is an immediate test notification",
+                            notificationLayout: NotificationLayout.BigText,
+                            fullScreenIntent: true,
+                            wakeUpScreen: true,
+                            autoDismissible: false,
+                            category: NotificationCategory.Reminder,
+                            payload: {
+                              'taskType': 'test',
+                              'taskId': 'test_${DateTime.now().millisecondsSinceEpoch}',
+                            },
+                          ),
+                        );
+                        print('Test notification created');
+                      } catch (e) {
+                        print('Error creating test notification: $e');
+                      }
+                    },
+                    icon: Icon(Icons.notifications_active),
+                    label: Text("Test Now"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 10),
@@ -285,11 +446,13 @@ class _ToDoListPageState extends State<ToDoListPage> {
                       ),
                       TextSpan(
                         text: "Do\n",
-                        style: TextStyle(color: Colors.black, fontSize: 30, fontWeight: FontWeight.w600),
+                        style:
+                        TextStyle(color: Colors.black, fontSize: 30, fontWeight: FontWeight.w600),
                       ),
                       TextSpan(
                         text: "L I S T",
-                        style: TextStyle(letterSpacing: 8, color: Colors.blueAccent, fontSize: 18),
+                        style:
+                        TextStyle(letterSpacing: 8, color: Colors.blueAccent, fontSize: 18),
                       ),
                     ],
                   ),

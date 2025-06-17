@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'call_screen.dart';
 import 'connect_with_family.dart'; // Ensure this exists or comment out for now
 import 'package:alviora_tab/widgets/weather_widget.dart';
@@ -28,8 +29,39 @@ class AlvioraApp extends StatelessWidget {
   }
 }
 
-class AlvioraHomePage extends StatelessWidget {
+class AlvioraHomePage extends StatefulWidget {
   const AlvioraHomePage({super.key});
+
+  @override
+  State<AlvioraHomePage> createState() => _AlvioraHomePageState();
+}
+
+class _AlvioraHomePageState extends State<AlvioraHomePage> {
+  String _timeString = '';
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timeString = _formatDateTime(DateTime.now());
+    _timer = Timer.periodic(const Duration(seconds: 1), (Timer t) => _getTime());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _getTime() {
+    setState(() {
+      _timeString = _formatDateTime(DateTime.now());
+    });
+  }
+
+  String _formatDateTime(DateTime dateTime) {
+    return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,19 +125,19 @@ class AlvioraHomePage extends StatelessWidget {
                     // Top Info Bar
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
-                      children: const [
+                      children: [
                         Text(
-                          '02:56',
-                          style: TextStyle(
+                          _timeString,
+                          style: const TextStyle(
                             fontSize: 96,
                             fontWeight: FontWeight.bold,
                             color: Color(0xFF5EA8FF),
                           ),
                         ),
-                        SizedBox(width: 200),
-                        WeatherWidget(),
-                        SizedBox(width: 300),
-                        Column(
+                        const SizedBox(width: 200),
+                        const WeatherWidget(),
+                        const SizedBox(width: 300),
+                        const Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text('ROOM TEMP', style: TextStyle(fontSize: 16)),

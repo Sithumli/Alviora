@@ -23,6 +23,7 @@ class _ToDoListPageState extends State<ToDoListPage> {
   StreamSubscription? _deepBreathingSubscription;
   StreamSubscription? _schedulesSubscription;
   StreamSubscription? _waterSubscription;
+  StreamSubscription? _meditationSessionsSubscription;
 
   @override
   void initState() {
@@ -83,6 +84,16 @@ class _ToDoListPageState extends State<ToDoListPage> {
       if (snapshot.exists) {
         _handleWaterUpdate(snapshot.data()!);
       }
+    });
+
+    // Listen to meditation sessions
+    _meditationSessionsSubscription = FirebaseFirestore.instance
+        .collection('meditation_sessions')
+        .where('scheduledDateTime', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('scheduledDateTime', isLessThan: Timestamp.fromDate(startOfNextDay))
+        .snapshots()
+        .listen((snapshot) {
+      _handleMeditationSessionsUpdate(snapshot);
     });
   }
 
@@ -270,6 +281,38 @@ class _ToDoListPageState extends State<ToDoListPage> {
     }
   }
 
+  void _handleMeditationSessionsUpdate(QuerySnapshot snapshot) {
+    final List<Map<String, dynamic>> newTasks = [];
+    for (var doc in snapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      if (data['status'] != 'Completed' && data['status'] != 'Skipped') {
+        final scheduledDateTime = (data['scheduledDateTime'] as Timestamp?)?.toDate().toLocal();
+        final meditationType = data['meditationType'] ?? 'Meditation';
+        final frequency = data['frequency'] ?? 'Once';
+        if (scheduledDateTime != null && scheduledDateTime.isAfter(DateTime.now())) {
+          newTasks.add({
+            'icon': Icons.self_improvement,
+            'title': meditationType,
+            'status': frequency,
+            'time': scheduledDateTime.toString().substring(11, 16),
+            'details': [
+              "Scheduled: ${scheduledDateTime.toString().substring(0, 16)}",
+              "Frequency: $frequency",
+            ],
+          });
+          _notificationService.scheduleAlert(
+            meditationType,
+            scheduledDateTime,
+            taskType: 'meditation',
+            taskId: doc.id,
+            additionalInfo: "Time for your meditation session",
+          );
+        }
+      }
+    }
+    _updateTasks(newTasks, 'meditation');
+  }
+
   void _updateTasks(List<Map<String, dynamic>> newTasks, String taskType) {
     setState(() {
       // Remove old tasks of this type
@@ -289,6 +332,7 @@ class _ToDoListPageState extends State<ToDoListPage> {
     _deepBreathingSubscription?.cancel();
     _schedulesSubscription?.cancel();
     _waterSubscription?.cancel();
+    _meditationSessionsSubscription?.cancel();
     super.dispose();
   }
 

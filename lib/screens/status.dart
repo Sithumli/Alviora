@@ -1,7 +1,201 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
 
-class StatusPage extends StatelessWidget {
+class StatusPage extends StatefulWidget {
   const StatusPage({Key? key}) : super(key: key);
+
+  @override
+  State<StatusPage> createState() => _StatusPageState();
+}
+
+class _StatusPageState extends State<StatusPage> {
+  int completedCups = 0;
+  int totalCups = 0;
+  bool isLoading = true;
+  List<Map<String, dynamic>> todayMedications = [];
+  bool isLoadingMedications = true;
+  double? temperature;
+  final DatabaseReference dhtRef = FirebaseDatabase.instance.ref('dht22_sensor');
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWaterProgress();
+    _loadTodayMedications();
+    _loadTemperature();
+  }
+
+  void _loadTemperature() {
+    // Listen to DHT22 temperature updates
+    dhtRef.orderByKey().limitToLast(1).onValue.listen((event) {
+      final snapshot = event.snapshot;
+      if (snapshot.exists) {
+        final last = snapshot.children.first.value as Map<dynamic, dynamic>;
+        final tempVal = (last['temperature_c'] as num?)?.toDouble();
+        if (tempVal != null) {
+          setState(() {
+            temperature = tempVal;
+          });
+        }
+      }
+    });
+  }
+
+  Future<void> _loadWaterProgress() async {
+    try {
+      final today = DateTime.now();
+      final dateKey = "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
+      
+      final progressDoc = await FirebaseFirestore.instance.collection('water_progress').doc(dateKey).get();
+      
+      if (progressDoc.exists) {
+        final data = progressDoc.data()!;
+        setState(() {
+          completedCups = data['completedCups'] ?? 0;
+          totalCups = data['totalCups'] ?? 0;
+          isLoading = false;
+        });
+      } else {
+        // No progress for today, get total from health_alerts
+        final healthDoc = await FirebaseFirestore.instance.collection('health_alerts').doc('9C49NtsHl0TajBKTDzEIoSV4oNZ2').get();
+        setState(() {
+          completedCups = 0;
+          totalCups = healthDoc.data()?['dailyWaterIntake'] ?? 0;
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading water progress: $e');
+      setState(() {
+        completedCups = 0;
+        totalCups = 0;
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadTodayMedications() async {
+    try {
+      final today = DateTime.now();
+      final dateKey = "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
+      
+      // Get today's medications from the medications collection
+      final medicationsQuery = await FirebaseFirestore.instance
+          .collection('medications')
+          .get();
+      
+      final medications = <Map<String, dynamic>>[];
+      
+      for (final doc in medicationsQuery.docs) {
+        final data = doc.data();
+        final datetimeStr = data['datetime'] ?? '';
+        
+        // Parse the datetime string to get the date
+        DateTime? medicationDate;
+        try {
+          medicationDate = DateTime.parse(datetimeStr);
+        } catch (e) {
+          print('Error parsing datetime: $e');
+          continue;
+        }
+        
+        // Check if this medication is for today
+        final medicationDateKey = "${medicationDate.year}-${medicationDate.month.toString().padLeft(2, '0')}-${medicationDate.day.toString().padLeft(2, '0')}";
+        if (medicationDateKey != dateKey) {
+          continue; // Skip medications not for today
+        }
+        
+        final status = data['status'] ?? 'Pending';
+        final timeStr = "${medicationDate.hour.toString().padLeft(2, '0')}:${medicationDate.minute.toString().padLeft(2, '0')}";
+        
+        // Include all medications for today regardless of status or time
+        medications.add({
+          'id': doc.id,
+          'title': data['title'] ?? 'Medication',
+          'time': timeStr,
+          'status': status,
+          'description': data['lastStatus'] ?? '',
+        });
+      }
+      
+      // Sort by time
+      medications.sort((a, b) => a['time'].compareTo(b['time']));
+      
+      setState(() {
+        todayMedications = medications;
+        isLoadingMedications = false;
+      });
+    } catch (e) {
+      print('Error loading medications: $e');
+      setState(() {
+        todayMedications = [];
+        isLoadingMedications = false;
+      });
+    }
+  }
+
+  String _getMedicationStatusText(String status, String time) {
+    final timeStr = time.isNotEmpty ? ' - $time' : '';
+    
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return 'Taken$timeStr';
+      case 'skipped':
+        return 'Skipped$timeStr';
+      case 'pending':
+        final now = DateTime.now();
+        final taskTime = _parseTime(time);
+        if (taskTime != null && now.isAfter(taskTime)) {
+          return 'Overdue$timeStr';
+        } else {
+          return 'Upcoming$timeStr';
+        }
+      default:
+        return 'Pending$timeStr';
+    }
+  }
+
+  IconData _getMedicationIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return Icons.check_circle;
+      case 'skipped':
+        return Icons.cancel;
+      case 'pending':
+        return Icons.access_time;
+      default:
+        return Icons.access_time;
+    }
+  }
+
+  Color _getMedicationIconColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'completed':
+        return Colors.green;
+      case 'skipped':
+        return Colors.red;
+      case 'pending':
+        return Colors.orange;
+      default:
+        return Colors.orange;
+    }
+  }
+
+  DateTime? _parseTime(String timeStr) {
+    try {
+      final parts = timeStr.split(':');
+      if (parts.length == 2) {
+        final hour = int.parse(parts[0]);
+        final minute = int.parse(parts[1]);
+        final now = DateTime.now();
+        return DateTime(now.year, now.month, now.day, hour, minute);
+      }
+    } catch (e) {
+      print('Error parsing time: $e');
+    }
+    return null;
+  }
 
   Widget _buildCard({required Widget child, double? height}) {
     return Container(
@@ -25,6 +219,9 @@ class StatusPage extends StatelessWidget {
   }
 
   Widget _buildWaterIntakeCard() {
+    final progress = totalCups > 0 ? completedCups / totalCups : 0.0;
+    final cupsToShow = totalCups > 0 ? totalCups : 8; // Default to 8 if no data
+
     return _buildCard(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -38,77 +235,67 @@ class StatusPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4A90E2),
-                  borderRadius: BorderRadius.circular(20),
+          SizedBox(
+            width: 80,
+            height: 80,
+            child: Stack(
+              children: [
+                SizedBox(
+                  width: 80,
+                  height: 80,
+                  child: CircularProgressIndicator(
+                    value: progress,
+                    strokeWidth: 8,
+                    backgroundColor: Colors.grey.shade300,
+                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF4A90E2)),
+                  ),
                 ),
-                child: const Icon(Icons.remove, color: Colors.white, size: 16),
-              ),
-              const SizedBox(width: 16),
-              Column(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
+                Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '$completedCups',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF4A90E2),
+                        ),
+                      ),
+                      Text(
+                        '/$totalCups',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 4),
-                  Container(
-                    width: 40,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF4A90E2),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    width: 40,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF4A90E2),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    width: 40,
-                    height: 8,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF4A90E2),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 16),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4A90E2),
-                  borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Icon(Icons.add, color: Colors.white, size: 16),
-              ),
-            ],
+              ],
+            ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            '4 Cups',
-            style: TextStyle(
-              fontSize: 22,
+          Text(
+            isLoading ? 'Loading...' : '$completedCups of $totalCups Cups',
+            style: const TextStyle(
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
+            textAlign: TextAlign.center,
           ),
+          if (!isLoading && totalCups > 0) ...[
+            const SizedBox(height: 8),
+            Text(
+              '${(progress * 100).toInt()}% Complete',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -175,9 +362,9 @@ class StatusPage extends StatelessWidget {
             size: 40,
           ),
           const SizedBox(height: 12),
-          const Text(
-            '37.1°C',
-            style: TextStyle(
+          Text(
+            temperature != null ? '${temperature!.toStringAsFixed(1)}°C' : 'Loading...',
+            style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
               color: Colors.black,
@@ -380,26 +567,48 @@ class StatusPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          _buildMedicationItem(
-            icon: Icons.check_circle,
-            iconColor: Colors.green,
-            title: 'Blood Pressure Medicine',
-            subtitle: '8:30 AM - Taken',
-          ),
-          const SizedBox(height: 12),
-          _buildMedicationItem(
-            icon: Icons.access_time,
-            iconColor: Colors.orange,
-            title: 'Vitamin Supplement',
-            subtitle: '1:00 PM - Upcoming',
-          ),
-          const SizedBox(height: 12),
-          _buildMedicationItem(
-            icon: Icons.access_time,
-            iconColor: Colors.orange,
-            title: 'Cholesterol Medicine',
-            subtitle: '8:00 PM - Upcoming',
-          ),
+          if (isLoadingMedications)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4A90E2)),
+                ),
+              ),
+            )
+          else if (todayMedications.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'No medications scheduled for today',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ),
+            )
+          else
+            ...todayMedications.map((medication) {
+              final statusText = _getMedicationStatusText(medication['status'], medication['time']);
+              final icon = _getMedicationIcon(medication['status']);
+              final iconColor = _getMedicationIconColor(medication['status']);
+              
+              return Column(
+                children: [
+                  _buildMedicationItem(
+                    icon: icon,
+                    iconColor: iconColor,
+                    title: medication['title'],
+                    subtitle: statusText,
+                  ),
+                  if (medication != todayMedications.last)
+                    const SizedBox(height: 12),
+                ],
+              );
+            }).toList(),
         ],
       ),
     );

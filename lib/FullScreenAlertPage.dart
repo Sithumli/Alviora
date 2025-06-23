@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:alviora_tab/screens/mood_booster_services/meditation.dart';
+import 'package:alviora_tab/screens/mood_booster_services/deep_breathing.dart';
+import 'package:alviora_tab/screens/mood_booster_services/quick_breathing.dart';
 
 class FullScreenAlertPage extends StatefulWidget {
   final String title;
@@ -63,6 +66,13 @@ class _FullScreenAlertPageState extends State<FullScreenAlertPage> {
       
       // Update the original task collection based on task type
       switch (widget.taskType) {
+        case 'meditation':
+          await firestore.collection('meditation_sessions').doc(widget.taskId).update({
+            'status': status,
+            'lastStatus': status,
+            'lastUpdated': now,
+          });
+          break;
         case 'medication':
           await firestore.collection('medications').doc(widget.taskId).update({
             'status': status,
@@ -90,6 +100,36 @@ class _FullScreenAlertPageState extends State<FullScreenAlertPage> {
             'status': status,
             'userId': FirebaseFirestore.instance.collection('health_alerts').doc('9C49NtsHl0TajBKTDzEIoSV4oNZ2').id,
           });
+          // Update water progress tracking
+          if (status == 'Completed') {
+            final today = DateTime.now();
+            final dateKey = "${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}";
+            
+            // Get current progress for today
+            final progressDoc = await firestore.collection('water_progress').doc(dateKey).get();
+            int completedCups = 0;
+            int totalCups = 0;
+            
+            if (progressDoc.exists) {
+              final data = progressDoc.data()!;
+              completedCups = (data['completedCups'] ?? 0) + 1;
+              totalCups = data['totalCups'] ?? 0;
+            } else {
+              // First cup of the day, get total from health_alerts
+              final healthDoc = await firestore.collection('health_alerts').doc('9C49NtsHl0TajBKTDzEIoSV4oNZ2').get();
+              totalCups = healthDoc.data()?['dailyWaterIntake'] ?? 0;
+              completedCups = 1;
+            }
+            
+            // Update progress
+            await firestore.collection('water_progress').doc(dateKey).set({
+              'date': dateKey,
+              'completedCups': completedCups,
+              'totalCups': totalCups,
+              'lastUpdated': now,
+              'userId': FirebaseFirestore.instance.collection('health_alerts').doc('9C49NtsHl0TajBKTDzEIoSV4oNZ2').id,
+            }, SetOptions(merge: true));
+          }
           break;
           
         case 'schedule':
@@ -110,7 +150,53 @@ class _FullScreenAlertPageState extends State<FullScreenAlertPage> {
       );
     } finally {
       setState(() => _isUpdating = false);
-      Navigator.pop(context);
+      if (widget.taskType == 'meditation' && status == 'Completed') {
+        // Extract minutes from meditationType (e.g., '5 min Calm Breathing' -> 5)
+        final RegExp regExp = RegExp(r'^(\\d+)');
+        int minutes = 5;
+        final match = RegExp(r'^(\d+)').firstMatch(widget.title);
+        if (match != null) {
+          minutes = int.tryParse(match.group(1) ?? '5') ?? 5;
+        }
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => MeditationApp(
+              durationMinutes: minutes,
+              meditationType: widget.title,
+            ),
+          ),
+        );
+      } else if (widget.taskType == 'quick_breathing' && status == 'Completed') {
+        // Fetch the document to get durationMinutes
+        int minutes = 5;
+        try {
+          final doc = await FirebaseFirestore.instance.collection('quick_breathing_schedules').doc(widget.taskId).get();
+          if (doc.exists && doc.data() != null && doc.data()!['durationMinutes'] != null) {
+            minutes = (doc.data()!['durationMinutes'] as num).toInt();
+          }
+        } catch (e) {}
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => QuickBreathing(durationMinutes: minutes),
+          ),
+        );
+      } else if (widget.taskType == 'deep_breathing' && status == 'Completed') {
+        // Fetch the document to get durationMinutes
+        int minutes = 5;
+        try {
+          final doc = await FirebaseFirestore.instance.collection('deep_breathing_schedules').doc(widget.taskId).get();
+          if (doc.exists && doc.data() != null && doc.data()!['durationMinutes'] != null) {
+            minutes = (doc.data()!['durationMinutes'] as num).toInt();
+          }
+        } catch (e) {}
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => DeepBreathing(durationMinutes: minutes),
+          ),
+        );
+      } else {
+        Navigator.pop(context);
+      }
     }
   }
 
@@ -186,6 +272,8 @@ class _FullScreenAlertPageState extends State<FullScreenAlertPage> {
 
   IconData _getTaskIcon() {
     switch (widget.taskType) {
+      case 'meditation':
+        return Icons.self_improvement;
       case 'medication':
         return Icons.medication;
       case 'quick_breathing':
@@ -203,6 +291,8 @@ class _FullScreenAlertPageState extends State<FullScreenAlertPage> {
 
   Color _getTaskColor() {
     switch (widget.taskType) {
+      case 'meditation':
+        return Colors.indigo;
       case 'medication':
         return Colors.blue;
       case 'quick_breathing':

@@ -14,6 +14,7 @@ class TaskService {
   StreamSubscription? _deepBreathingSubscription;
   StreamSubscription? _schedulesSubscription;
   StreamSubscription? _waterSubscription;
+  StreamSubscription? _meditationSessionsSubscription;
 
   void initialize() {
     _setupRealTimeListeners();
@@ -72,6 +73,16 @@ class TaskService {
       if (snapshot.exists) {
         _handleWaterUpdate(snapshot.data()!);
       }
+    });
+
+    // Listen to meditation sessions
+    _meditationSessionsSubscription = FirebaseFirestore.instance
+        .collection('meditation_sessions')
+        .where('scheduledDateTime', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('scheduledDateTime', isLessThan: Timestamp.fromDate(startOfNextDay))
+        .snapshots()
+        .listen((snapshot) {
+      _handleMeditationSessionsUpdate(snapshot);
     });
   }
 
@@ -190,11 +201,32 @@ class TaskService {
     }
   }
 
+  void _handleMeditationSessionsUpdate(QuerySnapshot snapshot) {
+    for (var doc in snapshot.docs) {
+      final data = doc.data() as Map<String, dynamic>;
+      if (data['status'] != 'Completed' && data['status'] != 'Skipped') {
+        final scheduledDateTime = (data['scheduledDateTime'] as Timestamp?)?.toDate().toLocal();
+        final meditationType = data['meditationType'] ?? 'Meditation';
+        final frequency = data['frequency'] ?? 'Once';
+        if (scheduledDateTime != null && scheduledDateTime.isAfter(DateTime.now())) {
+          _notificationService.scheduleAlert(
+            meditationType,
+            scheduledDateTime,
+            taskType: 'meditation',
+            taskId: doc.id,
+            additionalInfo: "Time for your meditation session",
+          );
+        }
+      }
+    }
+  }
+
   void dispose() {
     _medicationsSubscription?.cancel();
     _quickBreathingSubscription?.cancel();
     _deepBreathingSubscription?.cancel();
     _schedulesSubscription?.cancel();
     _waterSubscription?.cancel();
+    _meditationSessionsSubscription?.cancel();
   }
 } 

@@ -1,36 +1,45 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'package:just_audio/just_audio.dart';
 
 void main() {
   runApp(MeditationApp());
 }
 
 class MeditationApp extends StatelessWidget {
+  final int durationMinutes;
+  final String meditationType;
+  const MeditationApp({Key? key, this.durationMinutes = 5, this.meditationType = "Meditation"}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Meditation Timer',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        fontFamily: 'Roboto',
-      ),
-      home: MeditationTimerScreen(),
-      debugShowCheckedModeBanner: false,
-    );
+    return MeditationTimerScreen(durationMinutes: durationMinutes, meditationType: meditationType);
   }
 }
 
 class MeditationTimerScreen extends StatefulWidget {
+  final int durationMinutes;
+  final String meditationType;
+  const MeditationTimerScreen({Key? key, this.durationMinutes = 5, this.meditationType = "Meditation"}) : super(key: key);
+
   @override
   _MeditationTimerScreenState createState() => _MeditationTimerScreenState();
 }
 
 class _MeditationTimerScreenState extends State<MeditationTimerScreen> {
   Timer? _timer;
-  int _minutes = 2;
-  int _seconds = 56;
+  late int _minutes;
+  int _seconds = 0;
   bool _isRunning = false;
   bool _isPaused = false;
+  final AudioPlayer _player = AudioPlayer();
+
+  @override
+  void initState() {
+    super.initState();
+    _minutes = widget.durationMinutes;
+    _seconds = 0;
+  }
 
   void _startTimer() {
     if (!_isRunning && !_isPaused) {
@@ -55,6 +64,7 @@ class _MeditationTimerScreenState extends State<MeditationTimerScreen> {
         } else {
           _timer?.cancel();
           _isRunning = false;
+          _playCompletionSound();
           // Timer completed
         }
       });
@@ -71,8 +81,8 @@ class _MeditationTimerScreenState extends State<MeditationTimerScreen> {
   void _resetTimer() {
     _timer?.cancel();
     setState(() {
-      _minutes = 2;
-      _seconds = 56;
+      _minutes = widget.durationMinutes;
+      _seconds = 0;
       _isRunning = false;
       _isPaused = false;
     });
@@ -112,9 +122,19 @@ class _MeditationTimerScreenState extends State<MeditationTimerScreen> {
     );
   }
 
+  Future<void> _playCompletionSound() async {
+    try {
+      await _player.setAsset('assets/sounds/notification.mp3');
+      await _player.play();
+    } catch (e) {
+      print('Error playing completion sound: $e');
+    }
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
+    _player.dispose();
     super.dispose();
   }
 
@@ -145,7 +165,7 @@ class _MeditationTimerScreenState extends State<MeditationTimerScreen> {
                     ),
                     SizedBox(width: 12),
                     Text(
-                      'Meditation',
+                      widget.meditationType,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -163,15 +183,7 @@ class _MeditationTimerScreenState extends State<MeditationTimerScreen> {
                   margin: EdgeInsets.only(top: 40),
                   child: OutlinedButton.icon(
                     onPressed: () {
-                      // Check if there's a previous route to pop to
-                      if (Navigator.canPop(context)) {
-                        Navigator.pop(context);
-                      } else {
-                        // If no previous route, you can navigate to your mood booster page
-                        // Navigator.pushReplacementNamed(context, '/mood-booster');
-                        // For now, just show a message or do nothing
-                        Navigator.pushReplacementNamed(context, '/mood-booster');
-                      }
+                      Navigator.of(context).popUntil((route) => route.isFirst);
                     },
                     icon: Icon(Icons.arrow_back, color: Colors.blue.shade600),
                     label: Text(

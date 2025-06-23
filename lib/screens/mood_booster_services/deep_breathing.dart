@@ -1,36 +1,39 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-
-void main() {
-  runApp(DeepBreathing());
-}
+import 'package:just_audio/just_audio.dart';
 
 class DeepBreathing extends StatelessWidget {
+  final int durationMinutes;
+  const DeepBreathing({Key? key, this.durationMinutes = 5}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Deep Breathing Timer',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        fontFamily: 'Roboto',
-      ),
-      home: DeepBreathingTimerScreen(),
-      debugShowCheckedModeBanner: false,
-    );
+    return DeepBreathingTimerScreen(durationMinutes: durationMinutes);
   }
 }
 
 class DeepBreathingTimerScreen extends StatefulWidget {
+  final int durationMinutes;
+  const DeepBreathingTimerScreen({Key? key, this.durationMinutes = 5}) : super(key: key);
+
   @override
   _DeepBreathingTimerScreenState createState() => _DeepBreathingTimerScreenState();
 }
 
 class _DeepBreathingTimerScreenState extends State<DeepBreathingTimerScreen> {
   Timer? _timer;
-  int _minutes = 2;
-  int _seconds = 56;
+  late int _minutes;
+  int _seconds = 0;
   bool _isRunning = false;
   bool _isPaused = false;
+  final AudioPlayer _player = AudioPlayer();
+
+  @override
+  void initState() {
+    super.initState();
+    _minutes = widget.durationMinutes;
+    _seconds = 0;
+  }
 
   void _startTimer() {
     if (!_isRunning && !_isPaused) {
@@ -55,10 +58,20 @@ class _DeepBreathingTimerScreenState extends State<DeepBreathingTimerScreen> {
         } else {
           _timer?.cancel();
           _isRunning = false;
+          _playCompletionSound();
           // Timer completed
         }
       });
     });
+  }
+
+  Future<void> _playCompletionSound() async {
+    try {
+      await _player.setAsset('assets/sounds/notification.mp3');
+      await _player.play();
+    } catch (e) {
+      print('Error playing completion sound: $e');
+    }
   }
 
   void _pauseTimer() {
@@ -71,8 +84,8 @@ class _DeepBreathingTimerScreenState extends State<DeepBreathingTimerScreen> {
   void _resetTimer() {
     _timer?.cancel();
     setState(() {
-      _minutes = 2;
-      _seconds = 56;
+      _minutes = widget.durationMinutes;
+      _seconds = 0;
       _isRunning = false;
       _isPaused = false;
     });
@@ -115,6 +128,7 @@ class _DeepBreathingTimerScreenState extends State<DeepBreathingTimerScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _player.dispose();
     super.dispose();
   }
 
@@ -161,7 +175,7 @@ class _DeepBreathingTimerScreenState extends State<DeepBreathingTimerScreen> {
                 children: [
                   GestureDetector(
                     onTap: () {
-                      Navigator.pop(context);
+                      Navigator.of(context).popUntil((route) => route.isFirst);
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(

@@ -40,16 +40,26 @@ flutter run
 
 ---
 
-### 🧠 Python backend
+### 🧠 Python Backend
 ```bash
+# Navigate to the backend directory
 cd Python_backend
-# Example command to start your backend server
-python app.py
+
+# Create a virtual environment (recommended)
+python -m venv venv
+
+# Activate the virtual environment
+# For Windows:
+.\venv\Scripts\activate
+# For Linux/Mac:
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Start the backend
+python main.py
 ```
-
-*(Replace `app.py` with your actual entry point if different.)*
-
----
 
 ## ⚙ Prerequisites
 

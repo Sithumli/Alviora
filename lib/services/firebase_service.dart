@@ -7,18 +7,19 @@ class FirebaseService {
   static final FirebaseAuth _auth = FirebaseAuth.instance;
 
   // Get current user ID
-  static String? get currentUserId => _auth.currentUser?.uid;
+  static String? get currentUserId => _auth.currentUser?.uid ?? 'anonymous_user';
 
   // Emergency Contacts Methods
   static Future<List<EmergencyContactModel>> getEmergencyContacts() async {
     try {
-      if (currentUserId == null) {
+      final userId = currentUserId;
+      if (userId == null) {
         throw Exception('User not authenticated');
       }
 
       final querySnapshot = await _firestore
           .collection('users')
-          .doc(currentUserId)
+          .doc(userId)
           .collection('emergency_contacts')
           .orderBy('isPrimary', descending: true)
           .orderBy('name')
@@ -35,13 +36,14 @@ class FirebaseService {
 
   static Future<void> addEmergencyContact(EmergencyContactModel contact) async {
     try {
-      if (currentUserId == null) {
+      final userId = currentUserId;
+      if (userId == null) {
         throw Exception('User not authenticated');
       }
 
       await _firestore
           .collection('users')
-          .doc(currentUserId)
+          .doc(userId)
           .collection('emergency_contacts')
           .add(contact.toMap());
     } catch (e) {
@@ -93,12 +95,13 @@ class FirebaseService {
     required String additionalInfo,
   }) async {
     try {
-      if (currentUserId == null) {
+      final userId = currentUserId;
+      if (userId == null) {
         throw Exception('User not authenticated');
       }
 
       final alertData = {
-        'userId': currentUserId,
+        'userId': userId,
         'type': type,
         'location': location,
         'additionalInfo': additionalInfo,
@@ -113,7 +116,7 @@ class FirebaseService {
       // Also add to user's emergency history
       await _firestore
           .collection('users')
-          .doc(currentUserId)
+          .doc(userId)
           .collection('emergency_history')
           .add(alertData);
 
@@ -158,17 +161,18 @@ class FirebaseService {
   // User Activity Logging
   static Future<void> logUserActivity(String action, Map<String, dynamic> data) async {
     try {
-      if (currentUserId == null) return;
+      final userId = currentUserId;
+      if (userId == null) return;
 
       await _firestore
           .collection('users')
-          .doc(currentUserId)
+          .doc(userId)
           .collection('activity_logs')
           .add({
         'action': action,
         'data': data,
         'timestamp': FieldValue.serverTimestamp(),
-        'userId': currentUserId,
+        'userId': userId,
       });
     } catch (e) {
       print('Error logging user activity: $e');

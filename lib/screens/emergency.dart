@@ -5,6 +5,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/firebase_service.dart';
 import '../models/emergency_contact_model.dart';
 import '../widgets/emergency_buttons.dart';
+import '../screens/emergency_contacts_screen.dart';
+import '../screens/medical_info_screen.dart';
+
 
 class EmergencyScreen extends StatefulWidget {
   const EmergencyScreen({super.key});
@@ -293,6 +296,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
             ),
 
             // Quick actions
+            // Quick actions
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -309,7 +313,7 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
                     label: 'Share Location',
                     onTap: () async {
                       if (currentLocation != null) {
-                        // Share location logic
+                        // Share location logic (placeholder)
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Location shared with emergency contacts')),
                         );
@@ -324,19 +328,26 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
                     icon: Icons.medical_information,
                     label: 'Medical Info',
                     onTap: () {
-                      // Navigate to medical info screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => MedicalInfoScreen()),
+                      );
                     },
                   ),
                   QuickActionButton(
                     icon: Icons.contact_emergency,
                     label: 'Emergency Contacts',
                     onTap: () {
-                      // Navigate to emergency contacts management
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => EmergencyContactsScreen()),
+                      );
                     },
                   ),
                 ],
               ),
             ),
+
           ],
         ),
       ),

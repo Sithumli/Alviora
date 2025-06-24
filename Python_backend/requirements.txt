@@ -16,3 +16,4 @@ RPi.GPIO>=0.7.0
 adafruit-circuitpython-dht>=3.5.0
 moviepy>=1.0.3
 scipy>=1.7.0
+deepface>=0.0.89

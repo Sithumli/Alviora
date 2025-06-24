@@ -19,7 +19,7 @@ ALERT_COOLDOWN = 300
 
 def push_mock_dht22_data():
     global last_alert_time
-    temperature = 36.5
+    temperature = 37.5
     humidity = 18.0
 
     temp_threshold_high = 35

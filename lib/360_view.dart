@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:math';
 import 'dart:async';
 import 'video_call_home.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 void main() {
   runApp(const MyApp());
@@ -24,13 +25,6 @@ class MyApp extends StatelessWidget {
 
 class LiveViewScreen extends StatelessWidget {
   const LiveViewScreen({super.key});
-
-  // Get the local IP address from environment or use localhost
-  String get streamUrl {
-    // For physical devices, use the actual local IP address
-    const String serverIp = '192.168.1.32'; // Your computer's local IP address
-    return 'http://192.168.1.32:8080';
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +52,7 @@ class LiveViewScreen extends StatelessWidget {
           children: [
             const Text("Live View", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            Text("Viewing: Bed Room (${streamUrl})", style: const TextStyle(color: Colors.grey)),
+            Text("Viewing: Bed Room (${getStreamUrl()})", style: const TextStyle(color: Colors.grey)),
             const SizedBox(height: 16),
 
             // Live Stream Container
@@ -69,7 +63,7 @@ class LiveViewScreen extends StatelessWidget {
                 border: Border.all(color: Colors.blueAccent, width: 2),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: WebRTCView(streamUrl: streamUrl),
+              child: WebRTCView(streamUrl: getStreamUrl()),
             ),
 
             const SizedBox(height: 20),
@@ -95,21 +89,141 @@ class LiveViewScreen extends StatelessWidget {
 
             const SizedBox(height: 30),
 
-            // Info Cards
-            Wrap(
-              spacing: 16,
-              runSpacing: 16,
-              children: const [
-                InfoCard(title: "Room Temperature", value: "24°C (Normal)"),
-                InfoCard(title: "Air Quality", value: "Good (97%)"),
-                InfoCard(title: "Last Movement", value: "2 mins ago"),
-                InfoCard(title: "Robot Battery", value: "87% (Charging)"),
-              ],
-            )
+            // Info Cards (Dynamic)
+            StreamBuilder<DatabaseEvent>(
+              stream: FirebaseDatabase.instance.ref().onValue,
+              builder: (context, snapshot) {
+                // Don't show loading animation while waiting for data
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const SizedBox.shrink();
+                }
+                if (!snapshot.hasData || snapshot.data?.snapshot.value == null) {
+                  return const Center(child: Text('No sensor data available'));
+                }
+                final data = snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
+                print('data: ' + data.toString());
+                // Get latest dht22_sensor
+                final dhtMap = (data['dht22_sensor'] as Map<dynamic, dynamic>?);
+                print('dhtMap: ' + (dhtMap?.toString() ?? 'null'));
+                final dhtLatest = dhtMap != null && dhtMap.isNotEmpty ? dhtMap.values.last as Map : null;
+                print('dhtLatest: ' + (dhtLatest?.toString() ?? 'null'));
+                // Access ir_motion under sensor_data
+                final irMap = (data['sensor_data'] != null && data['sensor_data']['ir_motion'] != null)
+                  ? data['sensor_data']['ir_motion'] as Map<dynamic, dynamic>
+                  : null;
+                final irLatest = irMap != null && irMap.isNotEmpty ? irMap.values.last as Map : null;
+                // Debugging output
+                print('irMap: ' + (irMap?.toString() ?? 'null'));
+                print('irLatest: ' + (irLatest?.toString() ?? 'null'));
+                // Room Temperature
+                String temp = "N/A";
+                String tempStatus = "";
+                if (dhtLatest != null && dhtLatest['temperature_c'] != null) {
+                  final tempVal = dhtLatest['temperature_c'];
+                  temp = "$tempVal°C";
+                  if (tempVal is num) {
+                    if (tempVal > 35) {
+                      tempStatus = "(High)";
+                    } else if (tempVal < 18) {
+                      tempStatus = "(Low)";
+                    } else {
+                      tempStatus = "(Normal)";
+                    }
+                  }
+                }
+                // Air Quality
+                String airQuality = "N/A";
+                final gasMap = (data['gas_sensor'] as Map<dynamic, dynamic>?);
+                if (gasMap != null && gasMap.isNotEmpty && gasMap.values.last is Map) {
+                  final gasLatest = gasMap.values.last as Map;
+                  int? mq135;
+                  try {
+                    mq135 = gasLatest['mq135'] is int
+                        ? gasLatest['mq135']
+                        : int.tryParse(gasLatest['mq135'].toString());
+                  } catch (e) {
+                    mq135 = null;
+                  }
+                  String qualityLabel = "Neutral";
+                  if (mq135 != null) {
+                    if (mq135 <= 50) {
+                      qualityLabel = "Good";
+                    } else if (mq135 > 100) {
+                      qualityLabel = "Bad";
+                    } else {
+                      qualityLabel = "Neutral";
+                    }
+                  }
+                  String airAgo = "";
+                  if (gasLatest['timestamp'] != null) {
+                    try {
+                      final airTime = DateTime.parse(gasLatest['timestamp'].toString());
+                      final now = DateTime.now();
+                      final diff = now.difference(airTime);
+                      if (diff.inMinutes < 1) {
+                        airAgo = "just now";
+                      } else if (diff.inMinutes < 60) {
+                        airAgo = "${diff.inMinutes} min ago";
+                      } else if (diff.inHours < 24) {
+                        airAgo = "${diff.inHours} hour${diff.inHours > 1 ? 's' : ''} ago";
+                      } else {
+                        airAgo = "${diff.inDays} day${diff.inDays > 1 ? 's' : ''} ago";
+                      }
+                    } catch (e) {
+                      airAgo = "";
+                    }
+                  }
+                  airQuality = qualityLabel;
+                  if (mq135 != null) airQuality += " ($mq135)";
+                  if (airAgo.isNotEmpty) airQuality += " - $airAgo";
+                }
+                // Last Movement
+                String lastMove = irLatest != null && irLatest['motion_detected'] != null
+                  ? (irLatest['motion_detected'] ? "Motion" : "No motion")
+                  : "N/A";
+                String lastMoveAgo = "-";
+                if (irLatest != null && irLatest['timestamp'] != null) {
+                  try {
+                    final lastMoveTime = DateTime.parse(irLatest['timestamp'].toString());
+                    final now = DateTime.now();
+                    final diff = now.difference(lastMoveTime);
+                    if (diff.inMinutes < 1) {
+                      lastMoveAgo = "just now";
+                    } else if (diff.inMinutes < 60) {
+                      lastMoveAgo = "${diff.inMinutes} min ago";
+                    } else if (diff.inHours < 24) {
+                      lastMoveAgo = "${diff.inHours} hour${diff.inHours > 1 ? 's' : ''} ago";
+                    } else {
+                      lastMoveAgo = "${diff.inDays} day${diff.inDays > 1 ? 's' : ''} ago";
+                    }
+                  } catch (e) {
+                    lastMoveAgo = "-";
+                  }
+                }
+                // Robot Battery (placeholder, as not in sensors)
+                String battery = "87% (Charging)";
+                return Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: [
+                    InfoCard(title: "Room Temperature", value: "$temp $tempStatus"),
+                    InfoCard(title: "Air Quality", value: airQuality),
+                    InfoCard(title: "Last Movement", value: "$lastMove ($lastMoveAgo)"),
+                    InfoCard(title: "Robot Battery", value: battery),
+                  ],
+                );
+              },
+            ),
           ],
         ),
       ),
     );
+  }
+
+  String getStreamUrl() {
+    // For physical devices, use the actual local IP address
+    const String serverIp = '192.168.1.32'; // Your computer's local IP address
+    return 'http://192.168.1.32:8080';
   }
 
   Widget _actionButton(IconData icon, String label) {

@@ -41,34 +41,64 @@ class StatusScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  StreamBuilder<DocumentSnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('health_alerts')
-                        .doc(FirebaseAuth.instance.currentUser?.uid)
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      int cups = 0;
-                      if (snapshot.hasData && snapshot.data!.exists) {
-                        cups = snapshot.data!['dailyWaterIntake'] ?? 0;
-                      }
-                      return _buildTopCard(
-                        Icons.local_drink,
-                        "Daily Water Intake",
-                        "$cups Cups",
-                        true,
-                        onAdd: () => _showWaterIntakeBottomSheet(context),
-                      );
-                    },
+                  Expanded(
+                    child: StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('health_alerts')
+                          .doc(FirebaseAuth.instance.currentUser?.uid)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        int cups = 0;
+                        if (snapshot.hasData && snapshot.data!.exists) {
+                          cups = snapshot.data!['dailyWaterIntake'] ?? 0;
+                        }
+                        return _buildTopCard(
+                          Icons.local_drink,
+                          "Daily Water Intake",
+                          "$cups Cups",
+                          true,
+                          onAdd: () => _showWaterIntakeBottomSheet(context),
+                        );
+                      },
+                    ),
                   ),
-                  _buildTopCard(Icons.mood, "Mood", "Good", false),
+                  Expanded(
+                    child: StreamBuilder<DatabaseEvent>(
+                      stream: FirebaseDatabase.instance
+                          .ref()
+                          .child('emotion_status')
+                          .onValue,
+                      builder: (context, snapshot) {
+                        String emotion = '...';
+                        if (snapshot.hasData && snapshot.data!.snapshot.value != null) {
+                          final data = snapshot.data!.snapshot.value as Map<dynamic, dynamic>?;
+                          if (data != null && data['emotion'] != null) {
+                            emotion = data['emotion'].toString();
+                          } else {
+                            emotion = 'Unknown';
+                          }
+                        } else if (snapshot.connectionState == ConnectionState.waiting) {
+                          emotion = '...';
+                        } else {
+                          emotion = 'Unknown';
+                        }
+                        return _buildTopCard(
+                          Icons.mood,
+                          "Mood",
+                          emotion,
+                          false,
+                        );
+                      },
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildLiveTemperatureCard(),
-                  _buildSleepCard(),
+                  Expanded(child: _buildLiveTemperatureCard()),
+                  Expanded(child: _buildSleepCard()),
                 ],
               ),
               const SizedBox(height: 12),
@@ -77,6 +107,34 @@ class StatusScreen extends StatelessWidget {
 
               _buildSectionTitle("Recent Health Alerts"),
               const SizedBox(height: 10),
+              // Water progress alert
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('water_progress')
+                    .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+                    .where('date', isEqualTo: DateTime.now().toIso8601String().substring(0, 10))
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const SizedBox();
+                  }
+                  if (snapshot.hasError) {
+                    return const SizedBox();
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const SizedBox();
+                  }
+                  final doc = snapshot.data!.docs.first;
+                  final data = doc.data() as Map<String, dynamic>;
+                  final int completedCups = data['completedCups'] ?? 0;
+                  final int totalCups = data['totalCups'] ?? 0;
+                  final String date = data['date'] ?? '';
+                  return _buildWaterAlertTile(
+                    "Water Progress: $completedCups out of $totalCups cups completed",
+                    date,
+                  );
+                },
+              ),
               _buildAlertTile("Slight coughing detected", "Yesterday, 10:30 PM"),
               _buildAlertTile("Lower activity than usual", "2 days ago"),
               const SizedBox(height: 20),
@@ -95,6 +153,8 @@ class StatusScreen extends StatelessWidget {
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
                     .collection('medications')
+                    .where('datetime', isGreaterThanOrEqualTo: DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day).toIso8601String())
+                    .where('datetime', isLessThan: DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day + 1).toIso8601String())
                     .orderBy('datetime')
                     .snapshots(),
                 builder: (context, snapshot) {
@@ -105,7 +165,7 @@ class StatusScreen extends StatelessWidget {
                     return Text('Error: ${snapshot.error}');
                   }
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Text("No medications found.");
+                    return const Text("No medications for today.");
                   }
 
                   return Column(
@@ -117,12 +177,26 @@ class StatusScreen extends StatelessWidget {
                         final String name = data['title'] ?? 'Unnamed Medicine';
                         final DateTime dateTime = DateTime.parse(data['datetime']);
                         final String time = TimeOfDay.fromDateTime(dateTime).format(context);
-                        final bool taken = data['status'] == 'Taken';
+                        final String status = data['status'] ?? 'Upcoming';
+                        IconData icon;
+                        Color iconColor;
+                        if (status == 'Completed') {
+                          icon = Icons.check_circle;
+                          iconColor = Colors.green;
+                        } else if (status == 'Skipped') {
+                          icon = Icons.cancel;
+                          iconColor = Colors.red;
+                        } else {
+                          icon = Icons.access_time;
+                          iconColor = Colors.amber;
+                        }
 
                         return _buildMedicationTile(
                           name,
                           time,
-                          taken,
+                          status,
+                          icon: icon,
+                          iconColor: iconColor,
                           onDelete: () async {
                             try {
                               await FirebaseFirestore.instance
@@ -307,57 +381,53 @@ class StatusScreen extends StatelessWidget {
   }
 
   Widget _buildTopCard(IconData icon, String title, String value, bool hasAdd, {VoidCallback? onAdd}) {
-    return Expanded(
-      child: Container(
-        height: 100,
-        margin: const EdgeInsets.symmetric(horizontal: 6),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(icon, color: Colors.blue),
-                const Spacer(),
-                if (hasAdd) 
-                  GestureDetector(
-                    onTap: onAdd,
-                    child: const Icon(Icons.add, size: 18, color: Colors.blue),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(title, style: const TextStyle(fontSize: 12)),
-            Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-          ],
-        ),
+    return Container(
+      height: 100,
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: Colors.blue),
+              const Spacer(),
+              if (hasAdd) 
+                GestureDetector(
+                  onTap: onAdd,
+                  child: const Icon(Icons.add, size: 18, color: Colors.blue),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(title, style: const TextStyle(fontSize: 12)),
+          Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        ],
       ),
     );
   }
 
   Widget _buildSleepCard() {
-    return Expanded(
-      child: Container(
-        height: 100,
-        margin: const EdgeInsets.symmetric(horizontal: 6),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Icon(Icons.nightlight_round, color: Colors.blue),
-            SizedBox(height: 8),
-            Text("Sleep Time", style: TextStyle(fontSize: 12)),
-            Text("7H 25Min", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
-          ],
-        ),
+    return Container(
+      height: 100,
+      margin: const EdgeInsets.symmetric(horizontal: 6),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          Icon(Icons.nightlight_round, color: Colors.blue),
+          SizedBox(height: 8),
+          Text("Sleep Time", style: TextStyle(fontSize: 12)),
+          Text("7H 25Min", style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+        ],
       ),
     );
   }
@@ -437,13 +507,13 @@ class StatusScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMedicationTile(String name, String time, bool taken, {required VoidCallback onDelete}) {
+  Widget _buildMedicationTile(String name, String time, String status, {required IconData icon, required Color iconColor, required VoidCallback onDelete}) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: taken ? const Color(0xFFDAE9FF) : Colors.white,
+        color: status == 'Completed' ? const Color(0xFFDAE9FF) : Colors.white,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: Colors.grey.shade300),
       ),
@@ -454,7 +524,7 @@ class StatusScreen extends StatelessWidget {
             onPressed: onDelete,
           ),
           const SizedBox(width: 8),
-          const Icon(Icons.medical_services, color: Colors.blue),
+          Icon(icon, color: iconColor),
           const SizedBox(width: 12),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -463,7 +533,9 @@ class StatusScreen extends StatelessWidget {
               const SizedBox(height: 4),
               Text(time, style: const TextStyle(fontSize: 12, color: Colors.black54)),
             ],
-          )
+          ),
+          const Spacer(),
+          Text(status, style: TextStyle(fontSize: 12, color: iconColor, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -471,29 +543,26 @@ class StatusScreen extends StatelessWidget {
 
   Widget _buildLiveTemperatureCard() {
     final dhtRef = FirebaseDatabase.instance.ref().child('dht22_sensor');
+    return StreamBuilder<DatabaseEvent>(
+      stream: dhtRef.orderByKey().limitToLast(1).onValue,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _loadingCard();
+        }
+        if (snapshot.hasError || !snapshot.hasData) {
+          return _buildTopCard(Icons.thermostat, "Temperature", "N/A", false);
+        }
 
-    return Expanded(
-      child: StreamBuilder<DatabaseEvent>(
-        stream: dhtRef.orderByKey().limitToLast(1).onValue,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return _loadingCard();
-          }
-          if (snapshot.hasError || !snapshot.hasData) {
-            return _buildTopCard(Icons.thermostat, "Temperature", "N/A", false);
-          }
+        final dataMap = snapshot.data!.snapshot.value as Map?;
+        if (dataMap == null || dataMap.isEmpty) {
+          return _buildTopCard(Icons.thermostat, "Temperature", "N/A", false);
+        }
 
-          final dataMap = snapshot.data!.snapshot.value as Map?;
-          if (dataMap == null || dataMap.isEmpty) {
-            return _buildTopCard(Icons.thermostat, "Temperature", "N/A", false);
-          }
+        final latest = dataMap.values.last;
+        final temperature = latest['temperature_c']?.toStringAsFixed(1) ?? 'N/A';
 
-          final latest = dataMap.values.last;
-          final temperature = latest['temperature_c']?.toStringAsFixed(1) ?? 'N/A';
-
-          return _buildTopCard(Icons.thermostat, "Temperature", "$temperature℃", false);
-        },
-      ),
+        return _buildTopCard(Icons.thermostat, "Temperature", "$temperature℃", false);
+      },
     );
   }
 
@@ -508,6 +577,35 @@ class StatusScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
         ),
         child: const Center(child: CircularProgressIndicator()),
+      ),
+    );
+  }
+
+  Widget _buildWaterAlertTile(String message, String time) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.local_drink, color: Colors.blue),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(message, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                const SizedBox(height: 4),
+                Text(time, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              ],
+            ),
+          )
+        ],
       ),
     );
   }

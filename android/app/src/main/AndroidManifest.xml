@@ -24,13 +24,6 @@
         <receiver
             android:name="me.carda.awesome_notifications.receivers.DismissedReceiver"
             android:exported="true"/>
-        <receiver
-            android:name="me.carda.awesome_notifications.receivers.RebootReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED"/>
-            </intent-filter>
-        </receiver>
         <service
             android:name="me.carda.awesome_notifications.notifications.services.NotificationService"
             android:permission="android.permission.BIND_JOB_SERVICE"

@@ -10,9 +10,23 @@ import 'home_clean.dart';
 import 'status.dart';
 import 'settings.dart';
 import 'emergency.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  User? user;
+
+  @override
+  void initState() {
+    super.initState();
+    user = FirebaseAuth.instance.currentUser;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,14 +71,14 @@ class HomeScreen extends StatelessWidget {
                     children: [
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
+                        children: [
+                          const Text(
                             "Welcome,",
                             style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                           ),
                           Text(
-                            "Adam Smith",
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.w400),
+                            user?.displayName ?? user?.email ?? "User",
+                            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w400),
                           ),
                         ],
                       ),

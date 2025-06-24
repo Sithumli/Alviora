@@ -4,6 +4,8 @@ import 'package:just_audio/just_audio.dart';
 import 'global_navigator.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'emergency.dart';
+import '360_view.dart';
 
 class AlertListener extends StatefulWidget {
   final Widget child;
@@ -30,13 +32,26 @@ class _AlertListenerState extends State<AlertListener> {
 
     _dbRef.onChildAdded.listen((event) async {
       final data = Map<String, dynamic>.from(event.snapshot.value as Map);
+      final alertKey = event.snapshot.key;
       if (data["action_required"] == true && data["status"] == "active") {
-        _showAlert(data);
+        _showAlert(data, alertKey);
       }
     });
   }
 
-  void _showAlert(Map<String, dynamic> data) async {
+  void _resolveAlert(String? alertKey) {
+    if (alertKey != null) {
+      _dbRef.child(alertKey).update({"status": "resolved"});
+    }
+  }
+
+  void _deactivateAlert(String? alertKey) {
+    if (alertKey != null) {
+      _dbRef.child(alertKey).update({"action_required": false});
+    }
+  }
+
+  void _showAlert(Map<String, dynamic> data, String? alertKey) async {
     final context = navigatorKey.currentState?.overlay?.context;
     if (context == null) return;
 
@@ -72,10 +87,11 @@ class _AlertListenerState extends State<AlertListener> {
           if (data["actions"]?["call_emergency"] == true)
             TextButton(
               onPressed: () async {
-                final uri = Uri(scheme: 'tel', path: data["emergency_number"]);
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri);
-                }
+                player.stop();
+                Navigator.of(context).pop();
+                _deactivateAlert(alertKey);
+                _resolveAlert(alertKey);
+                navigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => const EmergencyPage()));
               },
               child: Text("Call ${data["emergency_number"] ?? 'Emergency'}"),
             ),
@@ -84,7 +100,9 @@ class _AlertListenerState extends State<AlertListener> {
               onPressed: () {
                 player.stop();
                 Navigator.of(context).pop();
-                // TODO: Navigate to 360 view screen here
+                _deactivateAlert(alertKey);
+                _resolveAlert(alertKey);
+                navigatorKey.currentState?.push(MaterialPageRoute(builder: (_) => const LiveViewScreen()));
               },
               child: const Text("360 View"),
             ),
@@ -93,6 +111,8 @@ class _AlertListenerState extends State<AlertListener> {
               onPressed: () {
                 player.stop();
                 Navigator.of(context).pop();
+                _deactivateAlert(alertKey);
+                // Do not resolve, keep as active
               },
               child: const Text("Dismiss"),
             ),

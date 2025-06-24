@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'home_screen.dart';
+import 'sign_up_screen.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -156,13 +157,12 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                   const SizedBox(height: 4),
                   const Text(
-                    "By continuing, I agree to Ctrl Z’s Terms of Service. I also consent to the use of my app usage data to improve Alviora and the relevance of advertising campaigns for the app. Ctrl Z will never use your journal entries; only you can read them. See our Privacy Policy for more information.",
+                    "By continuing, I agree to Ctrl Z's Terms of Service. I also consent to the use of my app usage data to improve Alviora and the relevance of advertising campaigns for the app. Ctrl Z will never use your journal entries; only you can read them. See our Privacy Policy for more information.",
                     style: TextStyle(fontSize: 11, color: Colors.black54),
                   ),
                   const SizedBox(height: 24),
 
                   ElevatedButton(
-
                     onPressed: isLoading ? null : signInUser,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF368FF5),
@@ -174,6 +174,22 @@ class _SignInScreenState extends State<SignInScreen> {
                     child: isLoading
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text('Continue', style: TextStyle(fontSize: 15, color: Colors.white)),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text("Don't have an account?"),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const SignUpScreen()),
+                          );
+                        },
+                        child: const Text('Sign Up'),
+                      ),
+                    ],
                   ),
                 ],
               ),

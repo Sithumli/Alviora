@@ -39,33 +39,26 @@ dependencies:
   firebase_auth: ^5.5.3
   cloud_firestore: ^5.6.7
   firebase_storage: ^12.4.6
-
   # UI & device features
   url_launcher: ^6.1.12
-  intl: 0.20.2
+  intl: ^0.20.2
   webview_flutter: ^4.2.2
   http: ^1.4.0
   image_picker: ^1.0.0
-
   # Firebase Cloud Messaging (optional, for background alerts)
   firebase_messaging: ^15.0.2
   awesome_notifications: ^0.10.1
   # State management (optional but helpful)
   provider: ^6.1.2
-
-
   # For playing audio
   audioplayers: ^5.2.1
-
   # Cupertino Icons for iOS
   cupertino_icons: ^1.0.8
   firebase_database: ^11.3.6
-
   file_picker: ^10.1.9
-
-  permission_handler: ^11.3.1
-
+  permission_handler: ^12.0.0+1
   flutter_webrtc: ^0.14.1
+  agora_rtc_engine:  ^6.2.2
 
 
 dev_dependencies:

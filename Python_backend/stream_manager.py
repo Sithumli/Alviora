@@ -13,6 +13,7 @@ from datetime import datetime
 import logging
 from webrtc_streamer import WebRTCStreamer
 import os
+from deepface import DeepFace
 
 # Configure logging
 logging.basicConfig(
@@ -48,9 +49,11 @@ class StreamManager:
         # Firebase references
         self.alert_ref = None
         self.stream_ref = None
+        self.emotion_ref = None
         if self.firebase_enabled:
             self.alert_ref = db.reference("alerts")
             self.stream_ref = db.reference("stream_status")
+            self.emotion_ref = db.reference("emotion_status")
         
         # Video capture settings
         self.camera = None
@@ -77,6 +80,14 @@ class StreamManager:
         self.last_fall_alert_time = 0
         self.fall_alert_cooldown = 30  # 30 seconds cooldown between fall alerts
         self.confirmed_fall = False
+
+        # Emotion detection settings
+        self.last_emotion = None
+        self.emotion_confidence_threshold = 0.7
+        self.emotion_alert_cooldown = 60  # 60 seconds cooldown between emotion alerts
+        self.last_emotion_alert_time = 0
+        self.emotion_window = []
+        self.emotion_window_size = 10  # Track last 10 emotions for stability
         
         # WebRTC streamer
         try:
@@ -152,7 +163,7 @@ class StreamManager:
                 logger.error(f"Error processing audio: {str(e)}")
     
     def process_video(self):
-        """Process video frames for fall detection"""
+        """Process video frames for fall detection and emotion detection"""
         fall_detection_window = []  # Store recent pose states
         window_size = 15  # Increased window size for better temporal analysis
         fall_threshold = 0.4  # Increased threshold for more certainty
@@ -170,6 +181,50 @@ class StreamManager:
                 if not ret:
                     continue
                 
+                # Emotion Detection
+                try:
+                    result = DeepFace.analyze(frame, 
+                                           actions=['emotion'],
+                                           enforce_detection=False,
+                                           silent=True)
+                    
+                    if result:
+                        emotion = result[0]['dominant_emotion']
+                        emotion_scores = result[0]['emotion']
+                        confidence = emotion_scores[emotion] / 100.0  # Convert to 0-1 scale
+                        
+                        # Add to emotion window for stability
+                        self.emotion_window.append((emotion, confidence))
+                        if len(self.emotion_window) > self.emotion_window_size:
+                            self.emotion_window.pop(0)
+                        
+                        # Calculate most frequent emotion in window with high confidence
+                        high_conf_emotions = [(e, c) for e, c in self.emotion_window if c > self.emotion_confidence_threshold]
+                        if high_conf_emotions:
+                            emotion_counts = {}
+                            for e, _ in high_conf_emotions:
+                                emotion_counts[e] = emotion_counts.get(e, 0) + 1
+                            stable_emotion = max(emotion_counts.items(), key=lambda x: x[1])[0]
+                            
+                            # Check if emotion has changed significantly
+                            if stable_emotion != self.last_emotion:
+                                self.last_emotion = stable_emotion
+                                
+                                # Send real-time emotion update
+                                self.send_emotion_update({
+                                    "emotion": stable_emotion,
+                                    "confidence": confidence
+                                })
+                        
+                        # Draw emotion on frame
+                        (text_width, text_height), _ = cv2.getTextSize(f"{emotion}: {confidence:.2f}", cv2.FONT_HERSHEY_SIMPLEX, 0.9, 2)
+                        cv2.rectangle(frame, (10, 30 - text_height - 5), (10 + text_width, 30 + 5), (0, 0, 0), -1)
+                        cv2.putText(frame, f"{emotion}: {confidence:.2f}", 
+                                  (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 
+                                  0.9, (255, 255, 255), 2)
+                except Exception as e:
+                    logger.debug(f"No face detected or error in emotion detection: {str(e)}")
+
                 # Convert to RGB for MediaPipe
                 rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 results = self.pose.process(rgb_frame)
@@ -290,7 +345,7 @@ class StreamManager:
                     status_text += f" - Fall Probability: {fall_prob:.2f}"
                     if self.confirmed_fall:
                         status_text += " (FALL CONFIRMED)"
-                cv2.putText(frame, status_text, (10, 30),
+                cv2.putText(frame, status_text, (10, 70),
                            cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                 
                 # Put frame in queue for streaming
@@ -340,6 +395,22 @@ class StreamManager:
         except Exception as e:
             logger.error(f"Failed to send alert: {str(e)}")
     
+    def send_emotion_update(self, emotion_data):
+        """Send real-time emotion data to Firebase."""
+        if not self.firebase_enabled:
+            return
+            
+        try:
+            update_data = {
+                "emotion": emotion_data.get("emotion"),
+                "confidence": emotion_data.get("confidence"),
+                "last_update": datetime.now().isoformat()
+            }
+            self.emotion_ref.set(update_data)
+            logger.info(f"Emotion status updated: {emotion_data.get('emotion')}")
+        except Exception as e:
+            logger.error(f"Failed to send emotion update: {str(e)}")
+
     def start_streaming(self):
         """Start both video and audio streaming"""
         self.is_streaming = True

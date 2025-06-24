@@ -109,6 +109,8 @@ class _MeditationSchedulerPageState extends State<MeditationSchedulerPage> {
     );
 
     try {
+      // Debug print
+      print('Saving meditation type: $_selectedMeditation');
       // Store session in Firestore
       await FirebaseFirestore.instance.collection('meditation_sessions').add({
         'meditationType': _selectedMeditation,

@@ -5,6 +5,8 @@ import 'settings_account.dart';
 import 'settings_appearance.dart';
 import 'settings_notification.dart';
 import 'settings_password.dart';
+import 'sign_in_screen.dart';
+
 void main() {
   runApp(const MaterialApp(
     debugShowCheckedModeBanner: false,
@@ -135,8 +137,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const Spacer(),
             GestureDetector(
               onTap: () async {
-                await FirebaseAuth.instance.signOut();
-                // Add logout logic here (e.g., navigate to login screen)
+                try {
+                  await FirebaseAuth.instance.signOut();
+                  if (mounted) {
+                    // Navigate to sign in screen and remove all previous routes
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (_) => const SignInScreen()),
+                      (route) => false,
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Failed to log out. Please try again.')),
+                    );
+                  }
+                }
               },
               child: Container(
                 width: double.infinity,

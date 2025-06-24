@@ -1,4 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
+
+class Alert {
+  final String type;
+  final String timestamp;
+  final Map<String, dynamic> details;
+  final String status;
+  final String severity;
+  final bool actionRequired;
+  final Map<String, dynamic> actions;
+  final String emergencyNumber;
+  final String title;
+  final String message;
+  final String sound;
+
+  Alert({
+    required this.type,
+    required this.timestamp,
+    required this.details,
+    required this.status,
+    required this.severity,
+    required this.actionRequired,
+    required this.actions,
+    required this.emergencyNumber,
+    required this.title,
+    required this.message,
+    required this.sound,
+  });
+
+  factory Alert.fromMap(Map<String, dynamic> map) {
+    return Alert(
+      type: map['type'] ?? '',
+      timestamp: map['timestamp'] ?? '',
+      details: Map<String, dynamic>.from(map['details'] ?? {}),
+      status: map['status'] ?? '',
+      severity: map['severity'] ?? '',
+      actionRequired: map['action_required'] ?? false,
+      actions: Map<String, dynamic>.from(map['actions'] ?? {}),
+      emergencyNumber: map['emergency_number'] ?? '',
+      title: map['title'] ?? '',
+      message: map['message'] ?? '',
+      sound: map['sound'] ?? '',
+    );
+  }
+}
 
 class AlertsScreen extends StatefulWidget {
   @override
@@ -13,6 +59,118 @@ class _AlertsScreenState extends State<AlertsScreen> with SingleTickerProviderSt
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+  }
+
+  List<Alert> filterAlerts(List<Alert> alerts, String status) {
+    return alerts.where((a) => a.status.toLowerCase() == status.toLowerCase()).toList();
+  }
+
+  List<Widget> buildAlertList(List<Alert> alerts) {
+    if (alerts.isEmpty) {
+      return [Center(child: Text('No alerts found'))];
+    }
+    return alerts.map((alert) {
+      Color tagColor;
+      IconData icon;
+      switch (alert.type) {
+        case 'fall':
+          icon = Icons.warning;
+          tagColor = Colors.red;
+          break;
+        case 'cough':
+          icon = Icons.sick;
+          tagColor = Colors.orange;
+          break;
+        case 'gas_leak':
+          icon = Icons.air;
+          tagColor = Colors.orange;
+          break;
+        case 'environmental':
+          icon = Icons.thermostat;
+          tagColor = Colors.orange;
+          break;
+        case 'no_movement':
+          icon = Icons.directions_walk;
+          tagColor = Colors.blue;
+          break;
+        default:
+          icon = Icons.info;
+          tagColor = Colors.blue;
+      }
+      // Parse date and time
+      DateTime? dt;
+      try {
+        dt = DateTime.parse(alert.timestamp);
+      } catch (_) {}
+      String date = dt != null ? "${dt.month}/${dt.day}" : "";
+      String time = dt != null ? "${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}" : "";
+      return buildAlertCard(
+        icon: icon,
+        title: alert.title,
+        description: alert.message,
+        tag: alert.severity,
+        time: time,
+        date: date,
+        tagColor: tagColor,
+      );
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Alviora Alert System", style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        foregroundColor: Colors.black,
+        bottom: TabBar(
+          controller: _tabController,
+          labelColor: Colors.blue,
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: Colors.blue,
+          tabs: [
+            Tab(text: "Active"),
+            Tab(text: "Resolved"),
+          ],
+        ),
+      ),
+      body: Column(
+        children: [
+          SizedBox(height: 10),
+          buildToggleButtons(),
+          SizedBox(height: 10),
+          Expanded(
+            child: StreamBuilder(
+              stream: FirebaseDatabase.instance.ref('alerts').onValue,
+              builder: (context, AsyncSnapshot<DatabaseEvent> snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return Center(child: CircularProgressIndicator());
+                }
+                if (!snapshot.hasData || snapshot.data?.snapshot.value == null) {
+                  return Center(child: Text('No alerts found'));
+                }
+                final data = snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
+                List<Alert> allAlerts = data.values
+                  .map((v) => Alert.fromMap(Map<String, dynamic>.from(v)))
+                  .toList()
+                  .reversed
+                  .toList();
+                return TabBarView(
+                  controller: _tabController,
+                  children: [
+                    ListView(children: buildAlertList(filterAlerts(allAlerts, 'active'))),
+                    ListView(children: buildAlertList(filterAlerts(allAlerts, 'critical'))),
+                    ListView(children: buildAlertList(filterAlerts(allAlerts, 'resolved'))),
+                  ],
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget buildToggleButtons() {
@@ -90,124 +248,6 @@ class _AlertsScreenState extends State<AlertsScreen> with SingleTickerProviderSt
       ),
       trailing: Text(time, style: TextStyle(color: Colors.grey, fontSize: 12)),
       isThreeLine: true,
-    );
-  }
-
-  List<Widget> buildAlertList() {
-    return [
-      buildAlertCard(
-        icon: Icons.warning,
-        title: "Fall Detected",
-        description: "Possible Fall Detected in Living Room",
-        tag: "Critical",
-        time: "10:23 AM",
-        date: "May 2",
-        tagColor: Colors.red,
-      ),
-      buildAlertCard(
-        icon: Icons.thermostat,
-        title: "Elevated Temperature",
-        description: "Body Temperature Reading Above Normal",
-        tag: "Warning",
-        time: "09:15 AM",
-        date: "May 2",
-        tagColor: Colors.orange,
-      ),
-      buildAlertCard(
-        icon: Icons.medication,
-        title: "Missed Medication",
-        description: "Blood Pressure Medication Not Taken",
-        tag: "Warning",
-        time: "08:00 AM",
-        date: "May 2",
-        tagColor: Colors.orange,
-      ),
-      buildAlertCard(
-        icon: Icons.air,
-        title: "Poor Air Quality",
-        description: "Air Quality Below Recommended Levels",
-        tag: "Warning",
-        time: "07:50 AM",
-        date: "May 2",
-        tagColor: Colors.orange,
-      ),
-      buildAlertCard(
-        icon: Icons.directions_walk,
-        title: "Low Activity Level",
-        description: "Reduced Movement Detected Today",
-        tag: "Info",
-        time: "06:45 AM",
-        date: "May 2",
-        tagColor: Colors.blue,
-      ),
-      buildAlertCard(
-        icon: Icons.sick,
-        title: "Coughing Detected",
-        description: "Frequent Coughing Episodes Overnight",
-        tag: "Warning",
-        time: "11:40 PM",
-        date: "May 1",
-        tagColor: Colors.orange,
-      ),
-      buildAlertCard(
-        icon: Icons.battery_alert,
-        title: "Low Battery",
-        description: "Alviora Robot Battery at 10%",
-        tag: "Info",
-        time: "10:30 PM",
-        date: "May 1",
-        tagColor: Colors.blue,
-      ),
-      buildAlertCard(
-        icon: Icons.mood_bad,
-        title: "Mood Change Detected",
-        description: "Signs of Potential Distress Observed",
-        tag: "Warning",
-        time: "08:15 PM",
-        date: "May 1",
-        tagColor: Colors.orange,
-      ),
-    ];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Alviora Alert System", style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: Colors.black,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: Colors.blue,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: Colors.blue,
-          tabs: [
-            Tab(text: "Active"),
-            Tab(text: "Critical"),
-            Tab(text: "Resolved"),
-          ],
-        ),
-      ),
-      body: Column(
-        children: [
-          SizedBox(height: 10),
-          buildToggleButtons(),
-          SizedBox(height: 10),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                ListView(children: buildAlertList()),
-                Center(child: Text("No critical alerts")),
-                Center(child: Text("No resolved alerts")),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

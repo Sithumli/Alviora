@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/emergency_contact_model.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class FirebaseService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -100,27 +101,35 @@ class FirebaseService {
         throw Exception('User not authenticated');
       }
 
+      final DatabaseReference alertsRef = FirebaseDatabase.instance.ref('alerts');
+      final now = DateTime.now();
       final alertData = {
-        'userId': userId,
-        'type': type,
-        'location': location,
-        'additionalInfo': additionalInfo,
-        'timestamp': FieldValue.serverTimestamp(),
+        'action_required': true,
+        'actions': {
+          'call_emergency': true,
+          'dismiss': true,
+          'view_360': true,
+        },
+        'details': {
+          'count': 1,
+          'window_minutes': 1,
+        },
+        'emergency_number': type == 'medical' || type == 'fire' || type == 'police' ? '911' : '',
+        'message': additionalInfo,
+        'severity': 'high',
+        'sound': 'alert_sound.mp3',
         'status': 'active',
-        'resolved': false,
+        'timestamp': now.toIso8601String(),
+        'title': type == 'medical' ? 'Medical Emergency' : type == 'fire' ? 'Fire Emergency' : type == 'police' ? 'Police Emergency' : 'Emergency',
+        'type': type,
+        'userId': userId,
+        'location': location,
       };
 
-      // Add to emergency alerts collection
-      await _firestore.collection('emergency_alerts').add(alertData);
+      // Write to Realtime Database
+      await alertsRef.push().set(alertData);
 
-      // Also add to user's emergency history
-      await _firestore
-          .collection('users')
-          .doc(userId)
-          .collection('emergency_history')
-          .add(alertData);
-
-      // Notify emergency contacts (you can implement push notifications here)
+      // Optionally, you can still log activity or notify contacts as before
       await _notifyEmergencyContacts(type, location, additionalInfo);
     } catch (e) {
       print('Error triggering emergency alert: $e');

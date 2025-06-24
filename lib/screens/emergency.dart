@@ -7,6 +7,9 @@ import '../models/emergency_contact_model.dart';
 import '../widgets/emergency_buttons.dart';
 import '../screens/emergency_contacts_screen.dart';
 import '../screens/medical_info_screen.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'dart:async';
 
 
 class EmergencyScreen extends StatefulWidget {
@@ -20,12 +23,42 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
   List<EmergencyContactModel> emergencyContacts = [];
   bool isLoading = true;
   Position? currentLocation;
+  String? get userId => FirebaseService.currentUserId;
+
+  late final AudioPlayer _alertPlayer;
+  StreamSubscription<DatabaseEvent>? _alertSubscription;
 
   @override
   void initState() {
     super.initState();
+    _alertPlayer = AudioPlayer();
     _loadEmergencyContacts();
     _getCurrentLocation();
+    _listenForEmergencyAlerts();
+  }
+
+  void _listenForEmergencyAlerts() {
+    final alertsRef = FirebaseDatabase.instance.ref('alerts');
+    _alertSubscription = alertsRef.onChildAdded.listen((event) async {
+      final alert = event.snapshot.value as Map<dynamic, dynamic>?;
+      if (alert == null) return;
+      // Only play sound if alert is for this user
+      if (alert['userId'] == userId && alert['sound'] == 'alert_sound.mp3') {
+        try {
+          await _alertPlayer.setAsset('assets/sounds/notification.mp3');
+          await _alertPlayer.play();
+        } catch (e) {
+          print('Error playing emergency alert sound: $e');
+        }
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _alertSubscription?.cancel();
+    _alertPlayer.dispose();
+    super.dispose();
   }
 
   Future<void> _loadEmergencyContacts() async {
@@ -203,16 +236,16 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFE6F0FF),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF5EA8FF),
+        backgroundColor: const Color(0x5EA8FF),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white, size: 30),
+          icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 30),
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
           'Emergency',
           style: TextStyle(
-            color: Colors.white,
+            color: Colors.red,
             fontSize: 28,
             fontWeight: FontWeight.bold,
           ),
@@ -220,134 +253,163 @@ class _EmergencyScreenState extends State<EmergencyScreen> {
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Padding(
-        padding: const EdgeInsets.all(30),
-        child: Column(
-          children: [
-            // Emergency header
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(30),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.red.shade200, width: 2),
-              ),
-              child: Column(
-                children: [
-                  Icon(Icons.warning_amber_rounded, color: Colors.red, size: 80),
-                  const SizedBox(height: 20),
-                  const Text(
-                    'Emergency Assistance',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
+          : SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(30),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Emergency header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(30),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.red.shade200, width: 2),
+                ),
+                child: Column(
+                  children: [
+                    Icon(Icons.warning_amber_rounded, color: Colors.red, size: 80),
+                    const SizedBox(height: 15),
+                    const Text(
+                      'Emergency Assistance',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.red,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    currentLocation != null
-                        ? 'Location services enabled - Help will find you'
-                        : 'Press any button below for immediate help',
-                    style: TextStyle(fontSize: 18, color: Colors.black87),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                    const SizedBox(height: 10),
+                    Text(
+                      currentLocation != null
+                          ? 'Location services enabled - Help will find you'
+                          : 'Press any button below for immediate help',
+                      style: TextStyle(fontSize: 18, color: Colors.black87),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
+
+              const SizedBox(height: 40),
+
+              // Emergency buttons
+              Builder(
+                builder: (context) {
+                  final screenHeight = MediaQuery.of(context).size.height;
+                  final buttonRowHeight = screenHeight * 0.38;
+                  return SizedBox(
+                    height: buttonRowHeight,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: EmergencyButton(
+                              icon: Icons.local_hospital,
+                              label: 'Call 911\nMedical Emergency',
+                              color: Colors.red,
+                              onTap: () => _triggerEmergency('medical'),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: EmergencyButton(
+                              icon: Icons.local_fire_department,
+                              label: 'Fire Department',
+                              color: Colors.orange,
+                              onTap: () => _triggerEmergency('fire'),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: EmergencyButton(
+                              icon: Icons.local_police,
+                              label: 'Police',
+                              color: Colors.blue,
+                              onTap: () => _triggerEmergency('police'),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: EmergencyButton(
+                              icon: Icons.home_filled,
+                              label: 'Call Family\nMember',
+                              color: const Color(0xFF5EA8FF),
+                              onTap: _callFamilyMember,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+          boxShadow: const [BoxShadow(blurRadius: 5, color: Colors.black12)],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            QuickActionButton(
+              icon: Icons.location_on,
+              label: 'Share Location',
+              onTap: () async {
+                if (currentLocation != null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Location shared with emergency contacts')),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Location not available')),
+                  );
+                }
+              },
             ),
-
-            const SizedBox(height: 40),
-
-            // Emergency buttons
-            Expanded(
-              child: GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 20,
-                mainAxisSpacing: 20,
-                childAspectRatio: 1.2,
-                children: [
-                  EmergencyButton(
-                    icon: Icons.local_hospital,
-                    label: 'Call 911\nMedical Emergency',
-                    color: Colors.red,
-                    onTap: () => _triggerEmergency('medical'),
-                  ),
-                  EmergencyButton(
-                    icon: Icons.local_fire_department,
-                    label: 'Fire Department',
-                    color: Colors.orange,
-                    onTap: () => _triggerEmergency('fire'),
-                  ),
-                  EmergencyButton(
-                    icon: Icons.local_police,
-                    label: 'Police',
-                    color: Colors.blue,
-                    onTap: () => _triggerEmergency('police'),
-                  ),
-                  EmergencyButton(
-                    icon: Icons.phone,
-                    label: 'Call Family\nMember',
-                    color: const Color(0xFF5EA8FF),
-                    onTap: _callFamilyMember,
-                  ),
-                ],
-              ),
+            QuickActionButton(
+              icon: Icons.medical_information,
+              label: 'Medical Info',
+              onTap: () {
+                if (userId != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const MedicalInfoScreen(),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('User not authenticated')),
+                  );
+                }
+              },
             ),
-
-            // Quick actions
-            // Quick actions
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: const [BoxShadow(blurRadius: 5, color: Colors.black12)],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  QuickActionButton(
-                    icon: Icons.location_on,
-                    label: 'Share Location',
-                    onTap: () async {
-                      if (currentLocation != null) {
-                        // Share location logic (placeholder)
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Location shared with emergency contacts')),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Location not available')),
-                        );
-                      }
-                    },
-                  ),
-                  QuickActionButton(
-                    icon: Icons.medical_information,
-                    label: 'Medical Info',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => MedicalInfoScreen()),
-                      );
-                    },
-                  ),
-                  QuickActionButton(
-                    icon: Icons.contact_emergency,
-                    label: 'Emergency Contacts',
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => EmergencyContactsScreen()),
-                      );
-                    },
-                  ),
-                ],
-              ),
+            QuickActionButton(
+              icon: Icons.contact_emergency,
+              label: 'Emergency Contacts',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => EmergencyContactsScreen()),
+                );
+              },
             ),
-
           ],
         ),
       ),

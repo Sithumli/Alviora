@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/medical_info_model.dart';
+import '../services/firebase_service.dart';
 
 class MedicalInfoScreen extends StatefulWidget {
-  final String userId;
-
-  const MedicalInfoScreen({super.key, required this.userId});
+  const MedicalInfoScreen({super.key});
 
   @override
   State<MedicalInfoScreen> createState() => _MedicalInfoScreenState();
@@ -26,58 +24,67 @@ class _MedicalInfoScreenState extends State<MedicalInfoScreen> {
   final _additionalNotesController = TextEditingController();
 
   bool _isLoading = true;
-  late DocumentReference _docRef;
+  MedicalInfoModel? _medicalInfo;
 
   @override
   void initState() {
     super.initState();
-    _docRef = FirebaseFirestore.instance.collection('medical_info').doc(widget.userId);
     _loadMedicalInfo();
   }
 
   Future<void> _loadMedicalInfo() async {
-    final doc = await _docRef.get();
-    if (doc.exists) {
-      final data = doc.data() as Map<String, dynamic>;
-      final medicalInfo = MedicalInfoModel.fromMap(data, doc.id);
+    setState(() {
+      _isLoading = true;
+    });
+    final data = await FirebaseService.getMedicalInfo();
+    if (data != null) {
+      final medicalInfo = MedicalInfoModel.fromMap(data, 'primary'); // doc id is 'primary'
 
       setState(() {
+        _medicalInfo = medicalInfo;
         _bloodTypeController.text = medicalInfo.bloodGroup ?? '';
-        _allergiesController.text = medicalInfo.allergies?.join(', ') ?? '';
-        _conditionsController.text = medicalInfo.conditions?.join(', ') ?? '';
-        _medicationsController.text = medicalInfo.medications?.join(', ') ?? '';
+        _allergiesController.text = (medicalInfo.allergies ?? []).join(', ');
+        _conditionsController.text = (medicalInfo.conditions ?? []).join(', ');
+        _medicationsController.text = (medicalInfo.medications ?? []).join(', ');
         _emergencyContactController.text = medicalInfo.emergencyContact ?? '';
         _doctorNameController.text = medicalInfo.doctorName ?? '';
         _doctorPhoneController.text = medicalInfo.doctorPhone ?? '';
         _insuranceInfoController.text = medicalInfo.insuranceInfo ?? '';
         _additionalNotesController.text = medicalInfo.additionalNotes ?? '';
-        _isLoading = false;
       });
-    } else {
-      setState(() => _isLoading = false);
     }
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   Future<void> _saveMedicalInfo() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final medicalInfo = MedicalInfoModel(
-      id: widget.userId,
+    final newInfo = (_medicalInfo ?? MedicalInfoModel(id: 'primary')).copyWith(
       bloodGroup: _bloodTypeController.text.trim(),
-      allergies: _allergiesController.text.split(',').map((e) => e.trim()).toList(),
-      medications: _medicationsController.text.split(',').map((e) => e.trim()).toList(),
-      conditions: _conditionsController.text.split(',').map((e) => e.trim()).toList(),
+      allergies: _allergiesController.text.isEmpty
+          ? []
+          : _allergiesController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
+      medications: _medicationsController.text.isEmpty
+          ? []
+          : _medicationsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
+      conditions: _conditionsController.text.isEmpty
+          ? []
+          : _conditionsController.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
       emergencyContact: _emergencyContactController.text.trim(),
       doctorName: _doctorNameController.text.trim(),
       doctorPhone: _doctorPhoneController.text.trim(),
       insuranceInfo: _insuranceInfoController.text.trim(),
       additionalNotes: _additionalNotesController.text.trim(),
       lastUpdated: DateTime.now(),
-      createdAt: DateTime.now(),
     );
 
-    await _docRef.set(medicalInfo.toMap());
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Medical info saved.')));
+    await FirebaseService.updateMedicalInfo(newInfo.toMap());
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Medical info saved.')));
+      // No need to reload, the state is already updated.
+    }
   }
 
   @override
@@ -133,7 +140,12 @@ class _MedicalInfoScreenState extends State<MedicalInfoScreen> {
       child: TextFormField(
         controller: controller,
         decoration: InputDecoration(labelText: label, border: OutlineInputBorder()),
-        validator: (value) => value == null || value.isEmpty ? 'Required' : null,
+        validator: (value) {
+          if (label != 'Blood Type' && (value == null || value.isEmpty)) {
+            return 'This field cannot be empty';
+          }
+          return null;
+        },
       ),
     );
   }

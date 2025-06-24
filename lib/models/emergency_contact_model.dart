@@ -2,6 +2,8 @@ class EmergencyContactModel {
   final String id;
   final String name;
   final String phoneNumber;
+  final String priority; // High, Medium, Low
+  final bool isAvailable24h;
   final String relationship;
   final String? email;
   final bool isPrimary;
@@ -12,6 +14,8 @@ class EmergencyContactModel {
     required this.id,
     required this.name,
     required this.phoneNumber,
+    this.priority = 'Medium',
+    this.isAvailable24h = false,
     required this.relationship,
     this.email,
     this.isPrimary = false,
@@ -25,6 +29,8 @@ class EmergencyContactModel {
       id: id,
       name: map['name'] ?? '',
       phoneNumber: map['phoneNumber'] ?? '',
+      priority: map['priority'] ?? 'Medium',
+      isAvailable24h: map['isAvailable24h'] ?? false,
       relationship: map['relationship'] ?? '',
       email: map['email'],
       isPrimary: map['isPrimary'] ?? false,
@@ -38,6 +44,8 @@ class EmergencyContactModel {
     return {
       'name': name,
       'phoneNumber': phoneNumber,
+      'priority': priority,
+      'isAvailable24h': isAvailable24h,
       'relationship': relationship,
       'email': email,
       'isPrimary': isPrimary,
@@ -51,6 +59,8 @@ class EmergencyContactModel {
     String? id,
     String? name,
     String? phoneNumber,
+    String? priority,
+    bool? isAvailable24h,
     String? relationship,
     String? email,
     bool? isPrimary,
@@ -61,6 +71,8 @@ class EmergencyContactModel {
       id: id ?? this.id,
       name: name ?? this.name,
       phoneNumber: phoneNumber ?? this.phoneNumber,
+      priority: priority ?? this.priority,
+      isAvailable24h: isAvailable24h ?? this.isAvailable24h,
       relationship: relationship ?? this.relationship,
       email: email ?? this.email,
       isPrimary: isPrimary ?? this.isPrimary,
@@ -71,7 +83,7 @@ class EmergencyContactModel {
 
   @override
   String toString() {
-    return 'EmergencyContactModel(id: $id, name: $name, phoneNumber: $phoneNumber, relationship: $relationship)';
+    return 'EmergencyContactModel(id: $id, name: $name, phone: $phoneNumber, priority: $priority, 24h: $isAvailable24h)';
   }
 
   @override

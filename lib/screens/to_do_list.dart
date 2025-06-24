@@ -443,40 +443,6 @@ class _ToDoListPageState extends State<ToDoListPage> {
                     label: Text("Go Back", style: TextStyle(fontSize: 18)),
                     style: TextButton.styleFrom(foregroundColor: Colors.blue),
                   ),
-                  Spacer(),
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      try {
-                        // Show notification immediately
-                        await AwesomeNotifications().createNotification(
-                          content: NotificationContent(
-                            id: DateTime.now().millisecondsSinceEpoch.remainder(100000),
-                            channelKey: 'task_alerts',
-                            title: "Test Notification",
-                            body: "This is an immediate test notification",
-                            notificationLayout: NotificationLayout.BigText,
-                            fullScreenIntent: true,
-                            wakeUpScreen: true,
-                            autoDismissible: false,
-                            category: NotificationCategory.Reminder,
-                            payload: {
-                              'taskType': 'test',
-                              'taskId': 'test_${DateTime.now().millisecondsSinceEpoch}',
-                            },
-                          ),
-                        );
-                        print('Test notification created');
-                      } catch (e) {
-                        print('Error creating test notification: $e');
-                      }
-                    },
-                    icon: Icon(Icons.notifications_active),
-                    label: Text("Test Now"),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 10),

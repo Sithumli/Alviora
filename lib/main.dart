@@ -5,10 +5,14 @@ import 'screens/robot_face_screen.dart';
 import 'FullScreenAlertPage.dart';
 import 'services/notification_service.dart';
 import 'services/task_service.dart';
+import 'services/music_service.dart';
+import 'models/selected_song_model.dart';
+import 'screens/mood_booster_services/mood_music.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 final notificationService = NotificationService();
 final taskService = TaskService();
+final musicService = MusicService();
 
 @pragma('vm:entry-point')
 Future<void> onActionReceivedMethod(ReceivedAction receivedAction) async {
@@ -117,6 +121,13 @@ void main() async {
 
   // Initialize task service
   taskService.initialize();
+
+  // Global music listener: only play music, do not navigate
+  musicService.startListening();
+  musicService.songStream.listen((song) {
+    // print('Global song stream triggered: $song');
+    // No navigation
+  });
 
   runApp(const MyApp());
 }

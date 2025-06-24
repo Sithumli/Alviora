@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../models/selected_song_model.dart';
+import '../../widgets/music_preview_card.dart';
 import 'dart:math' as Math;
 class MoodMusicPage extends StatefulWidget {
+  final SelectedSong? selectedSong;
+  const MoodMusicPage({Key? key, this.selectedSong}) : super(key: key);
   @override
   _MoodMusicPageState createState() => _MoodMusicPageState();
 }
@@ -8,27 +12,27 @@ class MoodMusicPage extends StatefulWidget {
 class _MoodMusicPageState extends State<MoodMusicPage> {
   bool isPlaying = false;
   double currentPosition = 0.35; // 35% progress as shown in the design
+  bool _showMusicCard = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFE8F4FD), // Light blue at top
-              Color(0xFFF0E6FF), // Light purple
-              Color(0xFFFFE6F0), // Light pink at bottom
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Stack(
-            children: [
-              // Main scrollable content
-              SingleChildScrollView(
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0xFFE8F4FD), // Light blue at top
+                  Color(0xFFF0E6FF), // Light purple
+                  Color(0xFFFFE6F0), // Light pink at bottom
+                ],
+              ),
+            ),
+            child: SafeArea(
+              child: SingleChildScrollView(
                 child: Padding(
                   padding: EdgeInsets.only(bottom: 100), // Space for bottom player
                   child: Column(
@@ -229,93 +233,20 @@ class _MoodMusicPageState extends State<MoodMusicPage> {
                   ),
                 ),
               ),
-
-              // Fixed bottom player
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  margin: EdgeInsets.all(20),
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(15),
-                    border: Border.all(color: Colors.blue.withOpacity(0.3), width: 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: Offset(0, -5),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          gradient: LinearGradient(
-                            colors: [Color(0xFF98E4D6), Color(0xFFCDB4DB)],
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Pini Bindu',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            Text(
-                              'Yuki Navarathne',
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          Icon(Icons.skip_previous, color: Colors.blue, size: 28),
-                          SizedBox(width: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.blue,
-                              shape: BoxShape.circle,
-                            ),
-                            child: IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  isPlaying = !isPlaying;
-                                });
-                              },
-                              icon: Icon(
-                                isPlaying ? Icons.pause : Icons.play_arrow,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Icon(Icons.skip_next, color: Colors.blue, size: 28),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+          if (widget.selectedSong != null && _showMusicCard)
+            Positioned.fill(
+              child: MusicPreviewCard(
+                song: widget.selectedSong!,
+                onClose: () {
+                  setState(() {
+                    _showMusicCard = false;
+                  });
+                },
+              ),
+            ),
+        ],
       ),
     );
   }

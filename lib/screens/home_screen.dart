@@ -11,6 +11,9 @@ import 'emergency.dart';
 import 'package:alviora_tab/messages.dart';
 import 'package:alviora_tab/settings.dart';
 import 'package:alviora_tab/widgets/environment_stats_widget.dart';
+import 'package:alviora_tab/services/music_service.dart';
+import 'package:alviora_tab/widgets/music_preview_card.dart';
+import 'package:alviora_tab/models/selected_song_model.dart';
 
 
 void main() {
@@ -41,17 +44,43 @@ class AlvioraHomePage extends StatefulWidget {
 class _AlvioraHomePageState extends State<AlvioraHomePage> {
   String _timeString = '';
   Timer? _timer;
+  final MusicService _musicService = MusicService();
+  SelectedSong? _currentSong;
+  bool _showMusicCard = false;
+  StreamSubscription<SelectedSong?>? _songSubscription;
 
   @override
   void initState() {
     super.initState();
     _timeString = _formatDateTime(DateTime.now());
     _timer = Timer.periodic(const Duration(seconds: 1), (Timer t) => _getTime());
+    
+    // Start listening to music updates
+    _musicService.startListening();
+    _songSubscription = _musicService.songStream.listen((song) {
+      print('songStream.listen triggered');
+      if (song != null) {
+        print('Music card triggered: ' + song.title);
+        if (mounted) {
+          setState(() {
+            print('setState called to show music card');
+            _currentSong = song;
+            _showMusicCard = true;
+          });
+        } else {
+          print('Widget not mounted, skipping setState');
+        }
+      } else {
+        print('song is null');
+      }
+    });
   }
 
   @override
   void dispose() {
     _timer?.cancel();
+    _songSubscription?.cancel();
+    //_musicService.dispose(); // Optionally keep music service alive
     super.dispose();
   }
 
@@ -65,211 +94,230 @@ class _AlvioraHomePageState extends State<AlvioraHomePage> {
     return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
+  void _closeMusicCard() {
+    setState(() {
+      _showMusicCard = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFE6F0FF),
-      body: SafeArea(
-        child: Row(
-          children: [
-            // Sidebar - UPDATED WITH NAVIGATION
-            Container(
-              width: 140,
-              decoration: const BoxDecoration(
-                color: Color(0xFF5EA8FF),
-                borderRadius: BorderRadius.only(
-                  topRight: Radius.circular(30),
-                  bottomRight: Radius.circular(30),
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Row(
+              children: [
+                // Sidebar - UPDATED WITH NAVIGATION
+                Container(
+                  width: 140,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF5EA8FF),
+                    borderRadius: BorderRadius.only(
+                      topRight: Radius.circular(30),
+                      bottomRight: Radius.circular(30),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const EmergencyScreen()),
+                          );
+                        },
+                        child: const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 90),
+                      ),
+                      const SizedBox(height: 50),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const MessagesScreen()),
+                          );
+                        },
+                        child: const Icon(Icons.message_rounded, color: Colors.white, size: 70),
+                      ),
+                      const SizedBox(height: 50),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const SettingsScreen()),
+                          );
+                        },
+                        child: const Icon(Icons.settings_rounded, color: Colors.white, size: 70),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const EmergencyScreen()),
-                      );
-                    },
-                    child: const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 90),
-                  ),
-                  const SizedBox(height: 50),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const MessagesScreen()),
-                      );
-                    },
-                    child: const Icon(Icons.message_rounded, color: Colors.white, size: 70),
-                  ),
-                  const SizedBox(height: 50),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const SettingsScreen()),
-                      );
-                    },
-                    child: const Icon(Icons.settings_rounded, color: Colors.white, size: 70),
-                  ),
-                ],
-              ),
-            ),
 
-            // Main content - FIXED EXPANDED SECTION
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
-                child: Column(
-                  children: [
-                    // Top Info Bar
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                // Main content - FIXED EXPANDED SECTION
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 10),
+                    child: Column(
                       children: [
-                        Text(
-                          _timeString,
-                          style: const TextStyle(
-                            fontSize: 96,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF5EA8FF),
+                        // Top Info Bar
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text(
+                              _timeString,
+                              style: const TextStyle(
+                                fontSize: 96,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF5EA8FF),
+                              ),
+                            ),
+                            const SizedBox(width: 200),
+                            const WeatherWidget(),
+                            const SizedBox(width: 300),
+                            const EnvironmentStatsWidget(),
+                          ],
+                        ),
+
+                        const SizedBox(height: 30),
+
+                        // Center title
+                        const Center(
+                          child: Text.rich(
+                            TextSpan(
+                              style: TextStyle(
+                                fontSize: 64,
+                                fontFamily: 'Urbanist',
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 2,
+                                color: Colors.black,
+                              ),
+                              children: [
+                                TextSpan(text: 'AL'),
+                                TextSpan(
+                                  text: 'V',
+                                  style: TextStyle(color: Color(0xFF368FF5)),
+                                ),
+                                TextSpan(text: 'IOR'),
+                                TextSpan(
+                                  text: 'A',
+                                  style: TextStyle(color: Color(0xFF368FF5)),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 200),
-                        const WeatherWidget(),
-                        const SizedBox(width: 300),
-                        const EnvironmentStatsWidget(),
+
+                        const Spacer(),
+
+                        // Bottom Card Buttons
+                        SizedBox(
+                          height: 280,
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 30),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFF5EA8FF),
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(40),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                Flexible(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => const ConnectWithFamilyScreen()),
+                                      );
+                                    },
+                                    child: const AppCard(
+                                      icon: Icons.map_rounded,
+                                      label: 'Connect\nwith Family',
+                                    ),
+                                  ),
+                                ),
+                                Flexible(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => ToDoListPage()),
+                                      );
+                                    },
+                                    child: const AppCard(
+                                      icon: Icons.list_alt_rounded,
+                                      label: 'Todo List',
+                                    ),
+                                  ),
+                                ),
+
+                                Flexible(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => StatusPage()),
+                                      );
+                                    },
+                                    child: const AppCard(
+                                      icon: Icons.list_alt_rounded,
+                                      label: 'Status',
+                                    ),
+                                  ),
+                                ),
+                                Flexible(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => TelemedicineHub()),
+                                      );
+                                    },
+                                    child: const AppCard(
+                                      icon: Icons.list_alt_rounded,
+                                      label: 'Telemedicine Hub',
+                                    ),
+                                  ),
+                                ),
+                                Flexible(
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => MoodBoosterScreen()),
+                                      );
+                                    },
+                                    child: const AppCard(
+                                      icon: Icons.list_alt_rounded,
+                                      label: 'Mood booster ',
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
-
-                    const SizedBox(height: 30),
-
-                    // Center title
-                    const Center(
-                      child: Text.rich(
-                        TextSpan(
-                          style: TextStyle(
-                            fontSize: 64,
-                            fontFamily: 'Urbanist',
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 2,
-                            color: Colors.black,
-                          ),
-                          children: [
-                            TextSpan(text: 'AL'),
-                            TextSpan(
-                              text: 'V',
-                              style: TextStyle(color: Color(0xFF368FF5)),
-                            ),
-                            TextSpan(text: 'IOR'),
-                            TextSpan(
-                              text: 'A',
-                              style: TextStyle(color: Color(0xFF368FF5)),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const Spacer(),
-
-                    // Bottom Card Buttons
-                    SizedBox(
-                      height: 280,
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 30),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF5EA8FF),
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(40),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            Flexible(
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => const ConnectWithFamilyScreen()),
-                                  );
-                                },
-                                child: const AppCard(
-                                  icon: Icons.map_rounded,
-                                  label: 'Connect\nwith Family',
-                                ),
-                              ),
-                            ),
-                            Flexible(
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => ToDoListPage()),
-                                  );
-                                },
-                                child: const AppCard(
-                                  icon: Icons.list_alt_rounded,
-                                  label: 'Todo List',
-                                ),
-                              ),
-                            ),
-
-                            Flexible(
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => StatusPage()),
-                                  );
-                                },
-                                child: const AppCard(
-                                  icon: Icons.list_alt_rounded,
-                                  label: 'Status',
-                                ),
-                              ),
-                            ),
-                            Flexible(
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => TelemedicineHub()),
-                                  );
-                                },
-                                child: const AppCard(
-                                  icon: Icons.list_alt_rounded,
-                                  label: 'Telemedicine Hub',
-                                ),
-                              ),
-                            ),
-                            Flexible(
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(builder: (context) => MoodBoosterScreen()),
-                                  );
-                                },
-                                child: const AppCard(
-                                  icon: Icons.list_alt_rounded,
-                                  label: 'Mood booster ',
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
+              ],
+            ),
+          ),
+          
+          // Music Preview Card Overlay
+          if (_showMusicCard && _currentSong != null)
+            Positioned.fill(
+              child: MusicPreviewCard(
+                song: _currentSong!,
+                onClose: _closeMusicCard,
               ),
             ),
-          ],
-        ),
+        ],
       ),
     );
   }

@@ -17,6 +17,8 @@ class _StatusPageState extends State<StatusPage> {
   bool isLoadingMedications = true;
   double? temperature;
   final DatabaseReference dhtRef = FirebaseDatabase.instance.ref('dht22_sensor');
+  String? moodEmotion;
+  final DatabaseReference moodRef = FirebaseDatabase.instance.ref('emotion_status');
 
   @override
   void initState() {
@@ -24,6 +26,28 @@ class _StatusPageState extends State<StatusPage> {
     _loadWaterProgress();
     _loadTodayMedications();
     _loadTemperature();
+    _loadMoodData();
+  }
+
+  void _loadMoodData() {
+    moodRef.onValue.listen((event) {
+      final snapshot = event.snapshot;
+      print('DEBUG: emotion_status snapshot value: \\${snapshot.value}');
+      if (snapshot.exists && snapshot.value != null) {
+        final data = snapshot.value as Map<dynamic, dynamic>;
+        final emotion = data['emotion'] as String?;
+        if (emotion != null) {
+          if (mounted) {
+            setState(() {
+              moodEmotion = emotion;
+            });
+          }
+        }
+      }
+    }, onError: (error) {
+      // Handle error, e.g., log it
+      print('Error loading mood data: $error');
+    });
   }
 
   void _loadTemperature() {
@@ -301,6 +325,27 @@ class _StatusPageState extends State<StatusPage> {
     );
   }
 
+  String _capitalize(String s) => s.isNotEmpty ? s[0].toUpperCase() + s.substring(1) : '';
+
+  IconData _getMoodIcon(String? emotion) {
+    switch (emotion?.toLowerCase()) {
+      case 'happy':
+        return Icons.sentiment_very_satisfied;
+      case 'neutral':
+        return Icons.sentiment_neutral;
+      case 'sad':
+        return Icons.sentiment_very_dissatisfied;
+      case 'angry':
+        return Icons.sentiment_very_dissatisfied;
+      case 'surprised':
+        return Icons.sentiment_satisfied_alt;
+      case 'fear':
+        return Icons.sentiment_very_dissatisfied;
+      default:
+        return Icons.sentiment_satisfied; // Default for 'Good' mood or null
+    }
+  }
+
   Widget _buildMoodCard() {
     return _buildCard(
       child: Column(
@@ -322,16 +367,16 @@ class _StatusPageState extends State<StatusPage> {
               color: const Color(0xFF4A90E2),
               borderRadius: BorderRadius.circular(30),
             ),
-            child: const Icon(
-              Icons.sentiment_satisfied,
+            child: Icon(
+              _getMoodIcon(moodEmotion),
               color: Colors.white,
               size: 30,
             ),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Good',
-            style: TextStyle(
+          Text(
+            moodEmotion != null ? _capitalize(moodEmotion!) : 'Loading...',
+            style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
               color: Colors.black,

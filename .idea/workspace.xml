@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4597b738-bd48-4d2f-b88c-da82333d757d" name="Changes" comment="delete main" />
+    <list default="true" id="4597b738-bd48-4d2f-b88c-da82333d757d" name="Changes" comment="added all 3 folders" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -80,6 +80,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="delete main" />
-    <option name="LAST_COMMIT_MESSAGE" value="delete main" />
+    <MESSAGE value="added all 3 folders" />
+    <option name="LAST_COMMIT_MESSAGE" value="added all 3 folders" />
   </component>
 </project>

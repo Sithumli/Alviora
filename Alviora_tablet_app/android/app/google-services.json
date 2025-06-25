@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "577187412387",
+    "firebase_url": "https://alviora-10650-default-rtdb.firebaseio.com",
+    "project_id": "alviora-10650",
+    "storage_bucket": "alviora-10650.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:577187412387:android:4d6fbbf7336a328f6f0216",
+        "android_client_info": {
+          "package_name": "com.example.alviora_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDC7tJe1wmBGXwQEkTnSejAPf8o2bpZcY8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:577187412387:android:ffb54214024289076f0216",
+        "android_client_info": {
+          "package_name": "com.example.alviora_tab"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDC7tJe1wmBGXwQEkTnSejAPf8o2bpZcY8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -101,20 +101,21 @@ class LiveViewScreen extends StatelessWidget {
                   return const Center(child: Text('No sensor data available'));
                 }
                 final data = snapshot.data!.snapshot.value as Map<dynamic, dynamic>;
-                print('data: ' + data.toString());
-                // Get latest dht22_sensor
+                
+                // Get latest dht22_sensor data
                 final dhtMap = (data['dht22_sensor'] as Map<dynamic, dynamic>?);
-                print('dhtMap: ' + (dhtMap?.toString() ?? 'null'));
-                final dhtLatest = dhtMap != null && dhtMap.isNotEmpty ? dhtMap.values.last as Map : null;
-                print('dhtLatest: ' + (dhtLatest?.toString() ?? 'null'));
-                // Access ir_motion under sensor_data
+                final dhtLatest = dhtMap != null ? _getLatestReading(dhtMap) : null;
+                
+                // Get latest ir_motion data
                 final irMap = (data['sensor_data'] != null && data['sensor_data']['ir_motion'] != null)
                   ? data['sensor_data']['ir_motion'] as Map<dynamic, dynamic>
                   : null;
-                final irLatest = irMap != null && irMap.isNotEmpty ? irMap.values.last as Map : null;
-                // Debugging output
-                print('irMap: ' + (irMap?.toString() ?? 'null'));
-                print('irLatest: ' + (irLatest?.toString() ?? 'null'));
+                final irLatest = irMap != null ? _getLatestReading(irMap) : null;
+                
+                // Get latest gas sensor data
+                final gasMap = (data['gas_sensor'] as Map<dynamic, dynamic>?);
+                final gasLatest = gasMap != null ? _getLatestReading(gasMap) : null;
+
                 // Room Temperature
                 String temp = "N/A";
                 String tempStatus = "";
@@ -131,11 +132,10 @@ class LiveViewScreen extends StatelessWidget {
                     }
                   }
                 }
+
                 // Air Quality
                 String airQuality = "N/A";
-                final gasMap = (data['gas_sensor'] as Map<dynamic, dynamic>?);
-                if (gasMap != null && gasMap.isNotEmpty && gasMap.values.last is Map) {
-                  final gasLatest = gasMap.values.last as Map;
+                if (gasLatest != null) {
                   int? mq135;
                   try {
                     mq135 = gasLatest['mq135'] is int
@@ -154,54 +154,61 @@ class LiveViewScreen extends StatelessWidget {
                       qualityLabel = "Neutral";
                     }
                   }
-                  String airAgo = "";
+                  airQuality = qualityLabel;
+                  if (mq135 != null) airQuality += " ($mq135)";
+                  
                   if (gasLatest['timestamp'] != null) {
                     try {
                       final airTime = DateTime.parse(gasLatest['timestamp'].toString());
                       final now = DateTime.now();
-                      final diff = now.difference(airTime);
-                      if (diff.inMinutes < 1) {
-                        airAgo = "just now";
-                      } else if (diff.inMinutes < 60) {
-                        airAgo = "${diff.inMinutes} min ago";
-                      } else if (diff.inHours < 24) {
-                        airAgo = "${diff.inHours} hour${diff.inHours > 1 ? 's' : ''} ago";
+                      if (airTime.isAfter(now)) {
+                        airQuality += " - just now";
                       } else {
-                        airAgo = "${diff.inDays} day${diff.inDays > 1 ? 's' : ''} ago";
+                        final diff = now.difference(airTime);
+                        if (diff.inMinutes < 1) {
+                          airQuality += " - just now";
+                        } else if (diff.inMinutes < 60) {
+                          airQuality += " - ${diff.inMinutes}m ago";
+                        } else if (diff.inHours < 24) {
+                          airQuality += " - ${diff.inHours}h ago";
+                        }
                       }
                     } catch (e) {
-                      airAgo = "";
+                      print('Error parsing air quality timestamp: $e');
                     }
                   }
-                  airQuality = qualityLabel;
-                  if (mq135 != null) airQuality += " ($mq135)";
-                  if (airAgo.isNotEmpty) airQuality += " - $airAgo";
                 }
+
                 // Last Movement
-                String lastMove = irLatest != null && irLatest['motion_detected'] != null
-                  ? (irLatest['motion_detected'] ? "Motion" : "No motion")
-                  : "N/A";
-                String lastMoveAgo = "-";
-                if (irLatest != null && irLatest['timestamp'] != null) {
-                  try {
-                    final lastMoveTime = DateTime.parse(irLatest['timestamp'].toString());
-                    final now = DateTime.now();
-                    final diff = now.difference(lastMoveTime);
-                    if (diff.inMinutes < 1) {
+                String lastMove = "N/A";
+                String lastMoveAgo = "";
+                if (irLatest != null) {
+                  lastMove = irLatest['motion_detected'] == true ? "Motion detected" : "No motion";
+                  if (irLatest['timestamp'] != null) {
+                    try {
+                      final lastMoveTime = DateTime.parse(irLatest['timestamp'].toString());
+                      final now = DateTime.now();
+                      if (lastMoveTime.isAfter(now)) {
+                        lastMoveAgo = "just now";
+                      } else {
+                        final diff = now.difference(lastMoveTime);
+                        if (diff.inMinutes < 1) {
+                          lastMoveAgo = "just now";
+                        } else if (diff.inMinutes < 60) {
+                          lastMoveAgo = "${diff.inMinutes}m ago";
+                        } else if (diff.inHours < 24) {
+                          lastMoveAgo = "${diff.inHours}h ago";
+                        } else {
+                          lastMoveAgo = "${diff.inDays}d ago";
+                        }
+                      }
+                    } catch (e) {
+                      print('Error parsing motion timestamp: $e');
                       lastMoveAgo = "just now";
-                    } else if (diff.inMinutes < 60) {
-                      lastMoveAgo = "${diff.inMinutes} min ago";
-                    } else if (diff.inHours < 24) {
-                      lastMoveAgo = "${diff.inHours} hour${diff.inHours > 1 ? 's' : ''} ago";
-                    } else {
-                      lastMoveAgo = "${diff.inDays} day${diff.inDays > 1 ? 's' : ''} ago";
                     }
-                  } catch (e) {
-                    lastMoveAgo = "-";
                   }
                 }
-                // Robot Battery (placeholder, as not in sensors)
-                String battery = "87% (Charging)";
+
                 return Wrap(
                   spacing: 16,
                   runSpacing: 16,
@@ -209,7 +216,7 @@ class LiveViewScreen extends StatelessWidget {
                     InfoCard(title: "Room Temperature", value: "$temp $tempStatus"),
                     InfoCard(title: "Air Quality", value: airQuality),
                     InfoCard(title: "Last Movement", value: "$lastMove ($lastMoveAgo)"),
-                    InfoCard(title: "Robot Battery", value: battery),
+                    InfoCard(title: "Robot Battery", value: "87% (Charging)"),
                   ],
                 );
               },
@@ -238,6 +245,27 @@ class LiveViewScreen extends StatelessWidget {
         Text(label, style: const TextStyle(fontSize: 12))
       ],
     );
+  }
+
+  Map<dynamic, dynamic> _getLatestReading(Map<dynamic, dynamic> readings) {
+    var latestTimestamp = DateTime.fromMillisecondsSinceEpoch(0);
+    Map<dynamic, dynamic>? latestReading;
+    
+    readings.forEach((key, value) {
+      if (value is Map && value['timestamp'] != null) {
+        try {
+          final timestamp = DateTime.parse(value['timestamp'].toString());
+          if (timestamp.isAfter(latestTimestamp)) {
+            latestTimestamp = timestamp;
+            latestReading = value;
+          }
+        } catch (e) {
+          print('Error parsing timestamp for reading: $e');
+        }
+      }
+    });
+    
+    return latestReading ?? readings.values.last;
   }
 }
 

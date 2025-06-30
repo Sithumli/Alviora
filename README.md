@@ -82,7 +82,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # Run the backend server
-python app.py
+python main.py
 ```
 
 ## Development Environment Setup

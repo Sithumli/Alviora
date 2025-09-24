@@ -1,0 +1,11 @@
+# Ignore Python cache and logs
+__pycache__/
+*.pyc
+*.log
+
+# Ignore Firebase credentials
+serviceAccountKey.json
+
+# Ignore virtual environment if you use one
+venv/
+.env/

@@ -1,0 +1,17 @@
+[Unit]
+Description=Alviora Elder Care Robot Service
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/Alviora/Python_backend
+ExecStart=/usr/bin/python3 /home/pi/Alviora/Python_backend/main.py
+Restart=always
+RestartSec=10
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=alviora
+
+[Install]
+WantedBy=multi-user.target 

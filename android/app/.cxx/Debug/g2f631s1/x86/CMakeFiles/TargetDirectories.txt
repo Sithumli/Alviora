@@ -1,2 +1,0 @@
-C:/Users/dex/StudioProjects/Alviora/android/app/.cxx/Debug/g2f631s1/x86/CMakeFiles/edit_cache.dir
-C:/Users/dex/StudioProjects/Alviora/android/app/.cxx/Debug/g2f631s1/x86/CMakeFiles/rebuild_cache.dir

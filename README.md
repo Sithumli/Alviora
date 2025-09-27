@@ -18,7 +18,7 @@ Before you begin, ensure you have the following installed:
 ## Project Structure
 ```
 Alviora/
-├── Alviora_phone_app/    # Mobile application for users
+├── Alviora_phone_app/    # Mobile application for users (Elders & ect...)
 ├── Alviora_tablet_app/   # Tablet application for caregivers
 └── Python_backend/       # Backend services and ML models
 ```
